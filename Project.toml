@@ -1,0 +1,4 @@
+name = "Mire"
+uuid = "fe462080-2232-11e9-3a2e-c30dbf578c75"
+authors = ["Felix Gerick <felixgerick@gmail.com>"]
+version = "0.1.0"
