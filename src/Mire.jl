@@ -3,7 +3,8 @@ module Mire
 using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
 
 export x,y,z,Π, ex,ey,ez,eigen, vel, eigenvel,
-        assemblehd, assemblemhd
+        assemblehd, assemblemhd,
+        angularmom,r
 
 @polyvar x y z
 
@@ -133,12 +134,12 @@ inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a
 
 
 function assemblemhd(N,a,b,c,Ω,b0)
-
+    T = typeof(a)
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
 
-    LHS = spzeros(2n_mat,2n_mat)
-    RHS = spzeros(2n_mat,2n_mat)
+    LHS = spzeros(T,2n_mat,2n_mat)
+    RHS = spzeros(T,2n_mat,2n_mat)
 
     LHS[1:n_mat,1:n_mat] .= mat_force(N,vs,inertial,a,b,c)
     LHS[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertial,a,b,c)
@@ -156,8 +157,11 @@ function eigenvel(N::Integer,vs,λs,n_ev::Integer,a::T,b::T,c::T; norm =true) wh
     # ac=all_combos(N)
     # vs=[vel(ac[i]...,a,b,c) for i=1:length(ac)]
     # us = gramschmidt(vs,a,b,c)
-    vo= sum([λs[i,n_ev]*vs[i] for i=1:length(ac)])
+    vo= sum([λs[i,n_ev]*vs[i] for i=1:length(vs)])
     return norm ? vo/√complex(inner_product(vo,vo,a,b,c)) : vo
 end
+
+const r = [x, y, z]
+angularmom(u,a,b,c) = int_polynomial_ellipsoid((u×r)[3],a,b,c)
 
 end #module

@@ -3,7 +3,7 @@ revise()
 a,b,c = 1.,1.,1.
 Le = 1e-6
 Ω = 1/Le*ez
-n=4
+n=6
 B0 = [-y,x,0]
 # vs = Mire.v(n,a,b,c);
 
