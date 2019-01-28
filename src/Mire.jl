@@ -118,6 +118,23 @@ function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Func
     end
 end
 
+
+function mat_force_galerkin_cached!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+
+    n_A = n_u(N)
+    @assert size(A,1)==n_A
+    @assert size(A,2)==n_A
+
+
+    for j=1:n_A
+        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
+        for i=1:n_A
+            # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
+            A[i,j] = inner_product_cached(cmat,vs[i],f)
+        end
+    end
+end
+
 """
     mat_force(N,vs,forcefun,a,b,c, args...)
 
@@ -131,6 +148,15 @@ function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) wh
     mat_force_galerkin!(A,vs,N ,forcefun,a,b,c,args...)
     return A
 end
+
+function mat_force_cached(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+    n_combos = n_u(N)
+    @assert n_combos == length(vs)
+    A = spzeros(T,n_combos,n_combos)
+    mat_force_galerkin_cached!(A,cmat,vs,N ,forcefun,a,b,c,args...)
+    return A
+end
+
 
 
 
@@ -200,12 +226,21 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
-
+function inner_product_cached(cmat,u,v)
+    duv = dot(u,v)
+    ip = zero(eltype(cmat))
+    cs = coefficients(duv)
+    exps = exponents.(monomial.(terms(duv)))
+    @inbounds @simd for i=1:length(cs)
+        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
+    end
+    return ip
+end
 """
 Function to precalculate monomial integrations.
 """
 function cacheint(n::Int,a::T,b::T,c::T) where T<:Real
-    Nmax=2n
+    Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
     for i=0:Nmax,j=0:Nmax,k=0:Nmax
         cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
@@ -245,6 +280,25 @@ function assemblemhd(N,a,b,c,Ω,b0)
 
     return A,B, vs
 end
+function assemblemhd_cachedint(N,cmat,a,b,c,Ω,b0)
+    T = typeof(a)
+    n_mat = n_u(N)
+    vs = vel(N,a,b,c)
+
+    A = spzeros(T,2n_mat,2n_mat)
+    B = spzeros(T,2n_mat,2n_mat)
+
+    A[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force_cached(N,cmat,vs,inertial,a,b,c)
+
+    B[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,coriolis,a,b,c,Ω)
+    B[1:n_mat,n_mat+1:end] .= mat_force_cached(N,cmat,vs,lorentz,a,b,c,b0)
+
+    B[n_mat+1:end,1:n_mat] .= mat_force_cached(N,cmat,vs,advection,a,b,c,b0)
+
+    return A,B, vs
+end
+
 
 """
     eigenvel(N,vs,αs,a,b,c; norm=true)
