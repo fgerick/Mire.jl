@@ -243,7 +243,7 @@ function assemblemhd(N,a,b,c,Ω,b0)
 
     B[n_mat+1:end,1:n_mat] .= mat_force(N,vs,advection,a,b,c,b0)
 
-    return B,A, vs
+    return A,B, vs
 end
 
 """
