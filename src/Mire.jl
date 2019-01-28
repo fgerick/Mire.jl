@@ -38,7 +38,7 @@ v3(n::Int,m::Int,l::Int,a,b,c) = ∇(Π(n,m,l)*F(a,b,c))×ez
 
 
 """
-`combos(N::Int)`
+    combos(N::Int)
 
 Computes all combos i,j,k satisfying i+j+k ≤ N.
 """
@@ -62,7 +62,7 @@ end
 
 
 """
-`vel(N,a,b,c)`
+    vel(N,a,b,c)
 
 Compute all velocity basis vectors for a given maximal degree N (Lebovitz 1989, eq. 41-42)
 """
@@ -99,7 +99,7 @@ diffusion(B,a,b,c,Lu) = 1/Lu*Δ.(B)
 ## create matrices using galerkin:
 
 """
-`mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)`
+    mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)
 
 Fills Matrix `A` with Galerkin coefficients of force given by the function `forcefun(u,a,b,c,args...)`.
 """
@@ -119,10 +119,10 @@ function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Func
 end
 
 """
-`mat_force(N,vs,forcefun,a,b,c, args...)`
+    mat_force(N,vs,forcefun,a,b,c, args...)
 
 Allocates new matrix `A` and fills elements by calling
-`mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)`.
+mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...).
 """
 function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
     n_combos = n_u(N)
@@ -157,9 +157,9 @@ function int_ellipsoid_surface(p::Monomial,a::Real,b::Real,c::Real)
 end
 
 """
-`int_monomial_ellipsoid(p,a,b,c)`
+    int_monomial_ellipsoid(p,a,b,c)
 
-Integrate monomial `p=x^iy^jz^k` over ellipsoid of semi-axes `a,b,c`.
+Integrate monomial `p=xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
 """
 function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     i = big(exponent(p,x))
@@ -169,9 +169,9 @@ function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
 end
 
 """
-`int_monomial_ellipsoid(i,j,k,a,b,c)`
+    int_monomial_ellipsoid(i,j,k,a,b,c)
 
-Integrate monomial `x^iy^jz^k` over ellipsoid of semi-axes `a,b,c`.
+Integrate monomial `xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
 """
 function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
     if iseven(i) && iseven(j) && iseven(k)
@@ -194,9 +194,9 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
 
 """
-`inner_product(u,v,a,b,c)`
+    inner_product(u,v,a,b,c)
 
-Defines inner product in an ellipsoidal volume $\int\langle u,v\rangle dV$.
+Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
@@ -215,7 +215,7 @@ end
 
 
 """
-`assemblemhd(N,a,b,c,Ω,b0)`
+    assemblemhd(N,a,b,c,Ω,b0)
 
 Assembles MHD eigen system, such that
 λAx=Bx
@@ -247,10 +247,10 @@ function assemblemhd(N,a,b,c,Ω,b0)
 end
 
 """
-`eigenvel(N,vs,αs,a,b,c; norm=true)`
+    eigenvel(N,vs,αs,a,b,c; norm=true)
 Reconstructs velocity u, following Vidal & Cebron 2017 eq. (3.5).
 
-If `norm` keyword is set `true` the velocity is normalised to satisfy $\int\langle u,v\rangle dV=1$.
+If `norm` keyword is set `true` the velocity is normalised to satisfy \$\\int\\langle u,v\\rangle dV\$.
 """
 function eigenvel(N::Integer,vs,αs,a::T,b::T,c::T; norm =true) where T<: Real
     vo= sum([αs[i]*vs[i] for i=1:length(vs)])
@@ -260,7 +260,7 @@ end
 eigenvel(N::Integer,vs,αs,n_ev::Integer,a::T,b::T,c::T; norm =true) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c,norm=norm)
 
 """
-`angularmom(u,a,b,c)`
+    angularmom(u,a,b,c)
 
 Calculates z-component of angular momentum.
 """
