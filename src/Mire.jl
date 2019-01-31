@@ -45,7 +45,7 @@ Computes all combos i,j,k satisfying i+j+k ≤ N.
 function combos(N::Int)
     gpairs = Vector{Int}[]
     hpairs = Vector{Int}[]
-    @inbounds for i=0:N-1, j=0:N-1, k=0:N-1
+    @inbounds for k=0:N-1, i=0:N-1, j=0:N-1
         if (i + j + k <= N-1)
             if k==0
                 # if i==j==0
@@ -92,8 +92,8 @@ viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
-lorentz(B,a,b,c,B0) = curl(B)×B0 + curl(B0)×B
-advection(u,a,b,c,B0) = curl(u×B0)
+lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
+advection(u,a,b,c,B0) = curl(u × B0)
 diffusion(B,a,b,c,Lu) = 1/Lu*Δ.(B)
 
 ## create matrices using galerkin:
@@ -108,7 +108,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Func
     n_A = n_u(N)
     @assert size(A,1)==n_A
     @assert size(A,2)==n_A
-
+    @assert length(vs)==n_A
 
     for j=1:n_A
         f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
@@ -124,6 +124,7 @@ function mat_force_galerkin_cached!(A::AbstractArray{T,2},cmat,vs,N::Integer, fo
     n_A = n_u(N)
     @assert size(A,1)==n_A
     @assert size(A,2)==n_A
+    @assert length(vs)==n_A
 
 
     for j=1:n_A
@@ -191,6 +192,9 @@ function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     i = big(exponent(p,x))
     j = big(exponent(p,y))
     k = big(exponent(p,z))
+    # i = exponent(p,x)
+    # j = exponent(p,y)
+    # k = exponent(p,z)
     return int_monomial_ellipsoid(i,j,k,a,b,c)
 end
 
@@ -205,15 +209,41 @@ function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c:
         γ₂ = j÷2
         γ₃ = k÷2
         γ = γ₁ + γ₂ + γ₃
-        f2g = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
-        fg = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-        fg1 = factorial(big(γ₁+γ₂+γ₃+1))
-        f2g3 = factorial(big(2γ₁+2γ₂+2γ₃+3))
-        return 8big(π)*a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fg1*f2g/fg/f2g3
+
+        # : as stated in Jeremie's thesis and Vidal & Cebron: (not working)
+        # f1 = factorial(γ+1)
+        # f2 = factorial(2γ)
+        # f3 = factorial(2γ+3)
+        # f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
+
+        f1 = factorial(big(γ₁+γ₂+γ₃+1))
+        f2 = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
+        f3 = factorial(2γ₁+2γ₂+2γ₃+3)
+        f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
+
+        fact = f1*f2/f3/f4
+        return 8big(π)*a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fact
     else
         zero(BigFloat)
     end
 end
+
+
+# function int_monomial_ellipsoid(i,j,k,a,b,c)
+#     return ((1 + (-1)^i) *(1 + (-1)^j) *(1 + (-1)^k) *a^(1+i) *b^(1+j) *c^(1+k) *gamma((1 + i)/2)* gamma((1 + j)/2) * gamma((1 + k)/2))/
+#                                                                         (8*gamma(1/2* (5 + i + j + k)))
+# end
+
+
+function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,d::Real)
+    if iseven(i) && iseven(j) && iseven(k)
+            return a*b*c*d^3*(a*d)^i*(b*d)^j*(c*d)^k*gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
+        else
+        zero(BigFloat)
+    end
+end
+
+
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
@@ -248,7 +278,14 @@ function cacheint(n::Int,a::T,b::T,c::T) where T<:Real
     return cachedmat
 end
 
-
+function cacheint_truncated(n::Int,a::T,b::T,c::T,d::T) where T<:Real
+    Nmax=4n
+    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
+    for i=0:Nmax,j=0:Nmax,k=0:Nmax
+        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,d)
+    end
+    return cachedmat
+end
 """
     assemblemhd(N,a,b,c,Ω,b0)
 
@@ -280,8 +317,8 @@ function assemblemhd(N,a,b,c,Ω,b0)
 
     return A,B, vs
 end
-function assemblemhd_cachedint(N,cmat,a,b,c,Ω,b0)
-    T = typeof(a)
+function assemblemhd_cachedint(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
+    # T = typeof(a)
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
 
@@ -289,7 +326,7 @@ function assemblemhd_cachedint(N,cmat,a,b,c,Ω,b0)
     B = spzeros(T,2n_mat,2n_mat)
 
     A[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force_cached(N,cmat,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= A[1:n_mat,1:n_mat] #mat_force_cached(N,cmat,vs,inertial,a,b,c)
 
     B[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,coriolis,a,b,c,Ω)
     B[1:n_mat,n_mat+1:end] .= mat_force_cached(N,cmat,vs,lorentz,a,b,c,b0)
