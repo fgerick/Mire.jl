@@ -2,11 +2,21 @@ module Mire
 
 using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
 
-export x,y,z,Π, ex,ey,ez,eigen, vel, eigenvel,
-        assemblehd, assemblemhd,
-        angularmom,r
+export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
+    combos, N1, N2, n_u, n_c,
+    inertial, coriolis, lorentz, advection,
+    eigen, vel, eigenvel, angularmom,r
+
+include("assemble.jl")
+
+export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!
+
+include("integration.jl")
+
+export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid
 
 # Cartesian coordinates as polynomial variables
+
 @polyvar x y z
 
 # Monomials
@@ -95,246 +105,6 @@ viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
 advection(u,a,b,c,B0) = curl(u × B0)
 diffusion(B,a,b,c,Lu) = 1/Lu*Δ.(B)
-
-## create matrices using galerkin:
-
-"""
-    mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)
-
-Fills Matrix `A` with Galerkin coefficients of force given by the function `forcefun(u,a,b,c,args...)`.
-"""
-function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
-
-    n_A = n_u(N)
-    @assert size(A,1)==n_A
-    @assert size(A,2)==n_A
-    @assert length(vs)==n_A
-
-    for j=1:n_A
-        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
-        for i=1:n_A
-            A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
-        end
-    end
-end
-
-
-function mat_force_galerkin_cached!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
-
-    n_A = n_u(N)
-    @assert size(A,1)==n_A
-    @assert size(A,2)==n_A
-    @assert length(vs)==n_A
-
-
-    for j=1:n_A
-        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
-        for i=1:n_A
-            # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
-            A[i,j] = inner_product_cached(cmat,vs[i],f)
-        end
-    end
-end
-
-"""
-    mat_force(N,vs,forcefun,a,b,c, args...)
-
-Allocates new matrix `A` and fills elements by calling
-mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...).
-"""
-function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
-    n_combos = n_u(N)
-    @assert n_combos == length(vs)
-    A = spzeros(T,n_combos,n_combos)
-    mat_force_galerkin!(A,vs,N ,forcefun,a,b,c,args...)
-    return A
-end
-
-function mat_force_cached(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
-    n_combos = n_u(N)
-    @assert n_combos == length(vs)
-    A = spzeros(T,n_combos,n_combos)
-    mat_force_galerkin_cached!(A,cmat,vs,N ,forcefun,a,b,c,args...)
-    return A
-end
-
-
-
-
-### ellipsoid integration
-
-"""
-Integral over the surface of an ellipsoid.
-"""
-function int_ellipsoid_surface(p::Monomial,a::Real,b::Real,c::Real)
-    i = big(exponent(p,x))
-    j = big(exponent(p,y))
-    k = big(exponent(p,z))
-    if iseven(i) && iseven(j) && iseven(k)
-
-        f1 = factorial(i)*factorial(j)*factorial(k)
-        f2 = factorial(i÷2)*factorial(j÷2)*factorial(k÷2)
-        f3 = factorial(2+i+j+k)
-        f4= factorial(1+(i+j+k)÷2)
-        ft = f1/f2/f3*f4
-        return √big(π)*a^(i+1)*b^(j+1)*c^(k+1)*ft
-    else
-        zero(BigFloat)
-    end
-end
-
-"""
-    int_monomial_ellipsoid(p,a,b,c)
-
-Integrate monomial `p=xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
-"""
-function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
-    i = big(exponent(p,x))
-    j = big(exponent(p,y))
-    k = big(exponent(p,z))
-    # i = exponent(p,x)
-    # j = exponent(p,y)
-    # k = exponent(p,z)
-    return int_monomial_ellipsoid(i,j,k,a,b,c)
-end
-
-"""
-    int_monomial_ellipsoid(i,j,k,a,b,c)
-
-Integrate monomial `xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
-"""
-function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
-    if iseven(i) && iseven(j) && iseven(k)
-        γ₁ = i÷2
-        γ₂ = j÷2
-        γ₃ = k÷2
-        γ = γ₁ + γ₂ + γ₃
-
-        # : as stated in Jeremie's thesis and Vidal & Cebron: (not working)
-        # f1 = factorial(γ+1)
-        # f2 = factorial(2γ)
-        # f3 = factorial(2γ+3)
-        # f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-
-        f1 = factorial(big(γ₁+γ₂+γ₃+1))
-        f2 = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
-        f3 = factorial(2γ₁+2γ₂+2γ₃+3)
-        f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-
-        fact = f1*f2/f3/f4
-        return 8big(π)*a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fact
-    else
-        zero(BigFloat)
-    end
-end
-
-
-# function int_monomial_ellipsoid(i,j,k,a,b,c)
-#     return ((1 + (-1)^i) *(1 + (-1)^j) *(1 + (-1)^k) *a^(1+i) *b^(1+j) *c^(1+k) *gamma((1 + i)/2)* gamma((1 + j)/2) * gamma((1 + k)/2))/
-#                                                                         (8*gamma(1/2* (5 + i + j + k)))
-# end
-
-
-function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,d::Real)
-    if iseven(i) && iseven(j) && iseven(k)
-            return a*b*c*d^3*(a*d)^i*(b*d)^j*(c*d)^k*gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
-        else
-        zero(BigFloat)
-    end
-end
-
-
-
-int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
-
-int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
-
-"""
-    inner_product(u,v,a,b,c)
-
-Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
-"""
-inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
-
-function inner_product_cached(cmat,u,v)
-    duv = dot(u,v)
-    ip = zero(eltype(cmat))
-    cs = coefficients(duv)
-    exps = exponents.(monomial.(terms(duv)))
-    @inbounds @simd for i=1:length(cs)
-        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-    end
-    return ip
-end
-"""
-Function to precalculate monomial integrations.
-"""
-function cacheint(n::Int,a::T,b::T,c::T) where T<:Real
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
-    end
-    return cachedmat
-end
-
-function cacheint_truncated(n::Int,a::T,b::T,c::T,d::T) where T<:Real
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,d)
-    end
-    return cachedmat
-end
-"""
-    assemblemhd(N,a,b,c,Ω,b0)
-
-Assembles MHD eigen system, such that
-λAx=Bx
-
-This is the dissipationless model, with
-
-∂ₜu = -2Ω×u + (∇×b0)×b + (∇×b)×b0
-∂ₜb = ∇×(u×b0)
-
-with Ω = 1/Le * eΩ.
-"""
-function assemblemhd(N,a,b,c,Ω,b0)
-    T = typeof(a)
-    n_mat = n_u(N)
-    vs = vel(N,a,b,c)
-
-    A = spzeros(T,2n_mat,2n_mat)
-    B = spzeros(T,2n_mat,2n_mat)
-
-    A[1:n_mat,1:n_mat] .= mat_force(N,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertial,a,b,c)
-
-    B[1:n_mat,1:n_mat] .= mat_force(N,vs,coriolis,a,b,c,Ω)
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,vs,lorentz,a,b,c,b0)
-
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,vs,advection,a,b,c,b0)
-
-    return A,B, vs
-end
-function assemblemhd_cachedint(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
-    # T = typeof(a)
-    n_mat = n_u(N)
-    vs = vel(N,a,b,c)
-
-    A = spzeros(T,2n_mat,2n_mat)
-    B = spzeros(T,2n_mat,2n_mat)
-
-    A[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= A[1:n_mat,1:n_mat] #mat_force_cached(N,cmat,vs,inertial,a,b,c)
-
-    B[1:n_mat,1:n_mat] .= mat_force_cached(N,cmat,vs,coriolis,a,b,c,Ω)
-    B[1:n_mat,n_mat+1:end] .= mat_force_cached(N,cmat,vs,lorentz,a,b,c,b0)
-
-    B[n_mat+1:end,1:n_mat] .= mat_force_cached(N,cmat,vs,advection,a,b,c,b0)
-
-    return A,B, vs
-end
 
 
 """
