@@ -13,7 +13,7 @@ export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!
 
 include("integration.jl")
 
-export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid
+export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 # Cartesian coordinates as polynomial variables
 
