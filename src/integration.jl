@@ -75,7 +75,15 @@ end
 
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
-
+function int_polynomial_ellipsoid(p,cmat)
+        ip = zero(eltype(cmat))
+        cs = coefficients(p)
+        exps = exponents.(monomial.(terms(p)))
+        @inbounds @simd for i=1:length(cs)
+            ip+=cs[i]*cmat[(exps[i] .+ 1)...]
+        end
+        return ip
+    end
 int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
 
 """

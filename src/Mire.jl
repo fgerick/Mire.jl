@@ -9,7 +9,7 @@ export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
 
 include("assemble.jl")
 
-export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!
+export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!, assemblemhd_diffusion
 
 include("integration.jl")
 
@@ -29,7 +29,7 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 Δ(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
 div(u) = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
 curl(u) = [∂(u[3],y)-∂(u[2],z),∂(u[1],z)-∂(u[3],x),∂(u[2],x)-∂(u[1],y)]
-
+advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1:3]
 # Lebovitz 1989, eq. (39b)
 F(a,b,c) = (1-x^2/a^2-y^2/b^2-z^2/c^2)
 
@@ -98,14 +98,14 @@ n_u(N::Int) = N1(N)+2N2(N)
 #hydro:
 inertial(u,a,b,c) = u
 coriolis(u,a,b,c,Ω) = -2*Ω×u
+# coriolis(u,a,b,c,Ω) = -2*advecterm(Ω,u)
 viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
 lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
 advection(u,a,b,c,B0) = curl(u × B0)
-diffusion(B,a,b,c,Lu) = 1/Lu*Δ.(B)
-
+diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
 
 """
     eigenvel(N,vs,αs,a,b,c; norm=true)
@@ -126,5 +126,6 @@ eigenvel(N::Integer,vs,αs,n_ev::Integer,a::T,b::T,c::T; norm =true) where T<: R
 Calculates z-component of angular momentum.
 """
 angularmom(u,a,b,c) = int_polynomial_ellipsoid((u×r)[3],a,b,c)
+angularmom(u,cmat) = int_polynomial_ellipsoid((u×r)[3],cmat)
 
 end #module
