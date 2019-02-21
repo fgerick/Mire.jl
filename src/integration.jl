@@ -128,7 +128,7 @@ end
 
 function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,s0::Real,s1::Real)
     if iseven(i) && iseven(j) && iseven(k)
-            return a*b*c*d^3*a*^i*b^j*c^k*(d^(3+i+j+k)-e^(3+i+j+k)) * gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
+            return a*b*c*d^3*a^i*b^j*c^k*(d^(3+i+j+k)-e^(3+i+j+k)) * gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
         else
         zero(BigFloat)
     end
