@@ -126,11 +126,25 @@ function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,
     end
 end
 
-function cacheint_truncated(n::Int,a::T,b::T,c::T,d::T) where T<:Real
+function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,s0::Real,s1::Real)
+    if iseven(i) && iseven(j) && iseven(k)
+            return a*b*c*d^3*a*^i*b^j*c^k*(d^(3+i+j+k)-e^(3+i+j+k)) * gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
+        else
+        zero(BigFloat)
+    end
+end
+# (1/(8 Gamma[
+#   1/2 (5 + i + j + k)]))(1 + (-1)^i) (1 + (-1)^j) (1 + (-1)^k) a^(
+#  1 + i) b^(1 + j) c^(
+#  1 + k) (d^(3 + i + j + k) - e^(3 + i + j + k)) Gamma[(1 + i)/
+#   2] Gamma[(1 + j)/2] Gamma[(1 + k)/2]
+
+
+function cacheint_truncated(n::Int,a::T,b::T,c::T,s0::T,s1::T) where T<:Real
     Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
     for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,d)
+        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,s0,s1)
     end
     return cachedmat
 end
