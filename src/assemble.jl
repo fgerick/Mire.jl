@@ -42,8 +42,8 @@ end
 
 function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat,vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
 
-    n_A = n_u(N)
-    n_A2 = n_u(N+Nshift)
+    n_A = n_u(N+Nshift)
+    n_A2 = n_u(N)
     # @assert size(A,1)==n_A
     # @assert size(A,2)==n_A
     # @assert length(vs)==n_A
@@ -84,8 +84,8 @@ function mat_force(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args..
     return A
 end
 function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
-    n_combos = n_u(N)
-    n_combos2 = n_u(N+Nshift)
+    n_combos = n_u(N+Nshift)
+    n_combos2 = n_u(N)
 
     # @assert n_combos == length(vs)
     A = spzeros(T,n_combos2,n_combos)
@@ -144,10 +144,10 @@ function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
 end
 function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     # T = typeof(a)
-    n_mat = n_u(N)
-    n_mat2 = n_u(N+Nshift)
-    vs = vel(N,a,b,c)
-    vs2 = vel(N+Nshift,a,b,c)
+    n_mat = n_u(N+Nshift)
+    n_mat2 = n_u(N)
+    vs = vel(N+Nshift,a,b,c)
+    vs2 = vel(N,a,b,c)
 
     A = spzeros(T,2n_mat2,2n_mat)
     B = spzeros(T,2n_mat2,2n_mat)
