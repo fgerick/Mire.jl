@@ -49,11 +49,11 @@ function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat,vs,vs2,N::Int,Nshi
     # @assert length(vs)==n_A
 
 
-    for j=1:n_A
-        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
-        for i=1:n_A2
+    for j=1:n_A2
+        f = forcefun(vs2[j],a,b,c,args...) #calculate f(uⱼ)
+        for i=1:n_A
             # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
-            A[i,j] = inner_product(cmat,vs2[i],f)
+            A[i,j] = inner_product(cmat,vs[i],f)
         end
     end
 end
