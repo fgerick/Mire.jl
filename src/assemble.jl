@@ -88,7 +88,7 @@ function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Funct
     n_combos2 = n_u(N)
 
     # @assert n_combos == length(vs)
-    A = spzeros(T,n_combos2,n_combos)
+    A = spzeros(T,n_combos,n_combos2)
     mat_force_galerkin_shift!(A,cmat,vs,vs2,N,Nshift,forcefun,a,b,c,args...)
     return A
 end
@@ -149,16 +149,16 @@ function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T
     vs = vel(N+Nshift,a,b,c)
     vs2 = vel(N,a,b,c)
 
-    A = spzeros(T,2n_mat2,2n_mat)
-    B = spzeros(T,2n_mat2,2n_mat)
+    A = spzeros(T,2n_mat,2n_mat2)
+    B = spzeros(T,2n_mat,2n_mat2)
 
-    A[1:n_mat2,1:n_mat] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
-    A[n_mat2+1:end,n_mat+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
+    A[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
+    A[n_mat+1:end,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
 
-    B[1:n_mat2,1:n_mat] .= mat_force_shift(N,Nshift,cmat,vs,vs2,coriolis,a,b,c,Ω)
-    B[1:n_mat2,n_mat+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,lorentz,a,b,c,b0)
+    B[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,coriolis,a,b,c,Ω)
+    B[1:n_mat,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,lorentz,a,b,c,b0)
 
-    B[n_mat2+1:end,1:n_mat] .= mat_force_shift(N,Nshift,cmat,vs,vs2,advection,a,b,c,b0)
+    B[n_mat+1:end,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,advection,a,b,c,b0)
 
     return A,B, vs
 end
