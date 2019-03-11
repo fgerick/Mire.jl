@@ -32,7 +32,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun:
 
 
     for j=1:n_A
-        f = forcefun(vs[j],a,b,c,args...)*h2(a,b,c) #calculate f(uⱼ)
+        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
         for i=1:n_A
             # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
             A[i,j] = inner_product(cmat,vs[i],f)
