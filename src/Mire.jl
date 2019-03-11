@@ -32,6 +32,7 @@ curl(u) = [∂(u[3],y)-∂(u[2],z),∂(u[1],z)-∂(u[3],x),∂(u[2],x)-∂(u[1],
 advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1:3]
 # Lebovitz 1989, eq. (39b)
 F(a,b,c) = (1-x^2/a^2-y^2/b^2-z^2/c^2)
+h2(a,b,c) = c^2*(1-x^2/a^2-y^2/b^2)
 
 # Cartesian unit vectors
 const ex=[1,0,0]
