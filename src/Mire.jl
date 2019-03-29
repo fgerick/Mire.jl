@@ -103,7 +103,7 @@ viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
 lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
-lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
+# lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
 advection(u,a,b,c,B0) = curl(u × B0)
 diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
