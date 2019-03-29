@@ -98,13 +98,13 @@ n_u(N::Int) = N1(N)+2N2(N)
 #hydro:
 inertial(u,a,b,c) = u
 coriolis(u,a,b,c,Ω) = -2*Ω×u
-# coriolis(u,a,b,c,Ω) = -2*advecterm(Ω,u)
 viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
 lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
-# lorentz(A,a,b,c,A0) = (∇(div(A))-Δ(A))×curl(A0) + (∇(div(A0))-Δ(A0))×curl(A)
+lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
+
 advection(u,a,b,c,B0) = curl(u × B0)
 diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
 
