@@ -132,13 +132,13 @@ function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
 
-    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)'
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)'
+    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
 
-    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)'
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)'
+    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)
+    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
 
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)'
+    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)
 
     return A,B, vs
 end
