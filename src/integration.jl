@@ -36,41 +36,44 @@ function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     return int_monomial_ellipsoid(i,j,k,a,b,c)
 end
 
-"""
-    int_monomial_ellipsoid(i,j,k,a,b,c)
+# """
+#     int_monomial_ellipsoid(i,j,k,a,b,c)
+#
+# Integrate monomial `xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
+# """
+# function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
+#     if iseven(i) && iseven(j) && iseven(k)
+#         γ₁ = i÷2
+#         γ₂ = j÷2
+#         γ₃ = k÷2
+#         γ = γ₁ + γ₂ + γ₃
+#
+#         # : as stated in Jeremie's thesis and Vidal & Cebron: (not working)
+#         # f1 = factorial(γ+1)
+#         # f2 = factorial(2γ)
+#         # f3 = factorial(2γ+3)
+#         # f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
+#
+#         f1 = factorial(big(γ₁+γ₂+γ₃+1))
+#         f2 = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
+#         f3 = factorial(2γ₁+2γ₂+2γ₃+3)
+#         f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
+#
+#         fact = f1*f2/f3/f4
+#         return 8big(π)*a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fact
+#     else
+#         zero(BigFloat)
+#     end
+# end
 
-Integrate monomial `xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
-"""
+
 function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
     if iseven(i) && iseven(j) && iseven(k)
-        γ₁ = i÷2
-        γ₂ = j÷2
-        γ₃ = k÷2
-        γ = γ₁ + γ₂ + γ₃
-
-        # : as stated in Jeremie's thesis and Vidal & Cebron: (not working)
-        # f1 = factorial(γ+1)
-        # f2 = factorial(2γ)
-        # f3 = factorial(2γ+3)
-        # f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-
-        f1 = factorial(big(γ₁+γ₂+γ₃+1))
-        f2 = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
-        f3 = factorial(2γ₁+2γ₂+2γ₃+3)
-        f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-
-        fact = f1*f2/f3/f4
-        return 8big(π)*a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fact
+        a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(8*gamma((5+i+j+k)/2))
     else
         zero(BigFloat)
     end
 end
-
-
-# function int_monomial_ellipsoid(i,j,k,a,b,c)
-#     return ((1 + (-1)^i) *(1 + (-1)^j) *(1 + (-1)^k) *a^(1+i) *b^(1+j) *c^(1+k) *gamma((1 + i)/2)* gamma((1 + j)/2) * gamma((1 + k)/2))/
-#                                                                         (8*gamma(1/2* (5 + i + j + k)))
-# end
 
 
 
