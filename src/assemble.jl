@@ -115,7 +115,7 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0) where T <: Real
     B = spzeros(T,2n_mat,2n_mat)
 
     A[1:n_mat,1:n_mat] .= mat_force(N,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertialmag,a,b,c)
 
     B[1:n_mat,1:n_mat] .= mat_force(N,vs,coriolis,a,b,c,Ω)
     B[1:n_mat,n_mat+1:end] .= mat_force(N,vs,lorentz,a,b,c,b0)
@@ -133,7 +133,7 @@ function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     B = spzeros(T,2n_mat,2n_mat)
 
     A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
 
     B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)
     B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
@@ -153,7 +153,7 @@ function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T
     B = spzeros(T,2n_mat,2n_mat2)
 
     A[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
-    A[n_mat+1:end,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
+    A[n_mat+1:end,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertialmag,a,b,c)
 
     B[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,coriolis,a,b,c,Ω)
     B[1:n_mat,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,lorentz,a,b,c,b0)
@@ -172,7 +172,7 @@ function assemblemhd_diffusion(N::Int,cmat,a::T,b::T,c::T,Ω,b0,Lu,Pm) where T<:
     B = spzeros(T,2n_mat,2n_mat)
 
     A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= A[1:n_mat,1:n_mat] #mat_force(N,cmat,vs,inertial,a,b,c)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
 
     B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω) .+ mat_force(N,cmat,vs,viscous,a,b,c,Lu,Pm)
     B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)

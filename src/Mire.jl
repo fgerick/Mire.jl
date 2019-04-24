@@ -102,6 +102,7 @@ viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
+inertialmag(B,a,b,c) = B
 lorentz(B,a,b,c,B0) = curl(curl(B) × B0 + curl(B0) × B)
 # lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
