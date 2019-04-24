@@ -96,13 +96,13 @@ n_u(N::Int) = N1(N)+2N2(N)
 ## Force functions:
 
 #hydro:
-inertial(u,a,b,c) = u
-coriolis(u,a,b,c,Ω) = -2*Ω×u
+inertial(u,a,b,c) = curl(u)
+coriolis(u,a,b,c,Ω) = curl(-2*Ω×u)
 viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
-lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
+lorentz(B,a,b,c,B0) = curl(curl(B) × B0 + curl(B0) × B)
 # lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
 advection(u,a,b,c,B0) = curl(u × B0)
