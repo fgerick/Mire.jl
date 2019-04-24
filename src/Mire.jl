@@ -9,7 +9,7 @@ export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
 
 include("assemble.jl")
 
-export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!, assemblemhd_diffusion
+export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!
 
 include("integration.jl")
 
@@ -96,18 +96,18 @@ n_u(N::Int) = N1(N)+2N2(N)
 ## Force functions:
 
 #hydro:
-inertial(u,a,b,c) = curl(u)
-coriolis(u,a,b,c,Ω) = curl(-2*Ω×u)
-viscous(u,a,b,c,Ek) = Ek*Δ.(u)
-viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
+inertial(u,a,b,c) = u
+coriolis(u,a,b,c,Ω) = -2*Ω×u
+# viscous(u,a,b,c,Ek) = Ek*Δ.(u)
+# viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
 inertialmag(B,a,b,c) = B
-lorentz(B,a,b,c,B0) = curl(curl(B) × B0 + curl(B0) × B)
+lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B
 # lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
 advection(u,a,b,c,B0) = curl(u × B0)
-diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
+# diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
 
 """
     eigenvel(N,vs,αs,a,b,c; norm=true)

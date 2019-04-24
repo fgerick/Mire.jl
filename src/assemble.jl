@@ -162,25 +162,25 @@ function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T
 
     return A,B, vs
 end
-
-function assemblemhd_diffusion(N::Int,cmat,a::T,b::T,c::T,Ω,b0,Lu,Pm) where T<:Real
-    # T = typeof(a)
-    n_mat = n_u(N)
-    vs = vel(N,a,b,c)
-
-    A = spzeros(T,2n_mat,2n_mat)
-    B = spzeros(T,2n_mat,2n_mat)
-
-    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
-
-    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω) .+ mat_force(N,cmat,vs,viscous,a,b,c,Lu,Pm)
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
-
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)
-    B[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,diffusion,a,b,c,b0,Lu)
-    return A,B, vs
-end
+#
+# function assemblemhd_diffusion(N::Int,cmat,a::T,b::T,c::T,Ω,b0,Lu,Pm) where T<:Real
+#     # T = typeof(a)
+#     n_mat = n_u(N)
+#     vs = vel(N,a,b,c)
+#
+#     A = spzeros(T,2n_mat,2n_mat)
+#     B = spzeros(T,2n_mat,2n_mat)
+#
+#     A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
+#     A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
+#
+#     B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω) .+ mat_force(N,cmat,vs,viscous,a,b,c,Lu,Pm)
+#     B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
+#
+#     B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)
+#     B[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,diffusion,a,b,c,b0,Lu)
+#     return A,B, vs
+# end
 
 """
     assemblehd(N,a,b,c,Ω,b0)
