@@ -93,37 +93,37 @@ function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Funct
     return A
 end
 
-"""
-    assemblemhd(N,a,b,c,Ω,b0)
-
-Assembles MHD eigen system, such that
-λAx=Bx
-
-This is the dissipationless model, with
-
-∂ₜu = -2Ω×u + (∇×b0)×b + (∇×b)×b0
-∂ₜb = ∇×(u×b0)
-
-with Ω = 1/Le * eΩ.
-"""
-function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0) where T <: Real
-    # T = typeof(a)
-    n_mat = n_u(N)
-    vs = vel(N,a,b,c)
-
-    A = spzeros(T,2n_mat,2n_mat)
-    B = spzeros(T,2n_mat,2n_mat)
-
-    A[1:n_mat,1:n_mat] .= mat_force(N,vs,inertial,a,b,c)'
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertialmag,a,b,c)'
-
-    B[1:n_mat,1:n_mat] .= mat_force(N,vs,coriolis,a,b,c,Ω)'
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,vs,lorentz,a,b,c,b0)'
-
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,vs,advection,a,b,c,b0)'
-
-    return A,B, vs
-end
+# """
+#     assemblemhd(N,a,b,c,Ω,b0)
+#
+# Assembles MHD eigen system, such that
+# λAx=Bx
+#
+# This is the dissipationless model, with
+#
+# ∂ₜu = -2Ω×u + (∇×b0)×b + (∇×b)×b0
+# ∂ₜb = ∇×(u×b0)
+#
+# with Ω = 1/Le * eΩ.
+# """
+# function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0) where T <: Real
+#     # T = typeof(a)
+#     n_mat = n_u(N)
+#     vs = vel(N,a,b,c)
+#
+#     A = spzeros(T,2n_mat,2n_mat)
+#     B = spzeros(T,2n_mat,2n_mat)
+#
+#     A[1:n_mat,1:n_mat] .= mat_force(N,vs,inertial,a,b,c)'
+#     A[n_mat+1:end,n_mat+1:end] .= mat_force(N,vs,inertialmag,a,b,c)'
+#
+#     B[1:n_mat,1:n_mat] .= mat_force(N,vs,coriolis,a,b,c,Ω)'
+#     B[1:n_mat,n_mat+1:end] .= mat_force(N,vs,lorentz,a,b,c,b0)'
+#
+#     B[n_mat+1:end,1:n_mat] .= mat_force(N,vs,advection,a,b,c,b0)'
+#
+#     return A,B, vs
+# end
 function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     # T = typeof(a)
     n_mat = n_u(N)
@@ -132,13 +132,13 @@ function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
 
-    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
+    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)'
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)'
 
-    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
+    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)'
+    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)'
 
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)
+    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)'
 
     return A,B, vs
 end
