@@ -2,36 +2,37 @@
 
 ## create matrices using galerkin:
 
-"""
-    mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)
+# """
+#     mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...)
+#
+# Fills Matrix `A` with Galerkin coefficients of force given by the function `forcefun(u,a,b,c,args...)`.
+# """
+# function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+#
+#     n_A = n_u(N)
+#     @assert size(A,1)==n_A
+#     @assert size(A,2)==n_A
+#     @assert length(vs)==n_A
+#
+#     for j=1:n_A
+#         f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
+#         for i=1:n_A
+#             A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
+#         end
+#     end
+# end
 
-Fills Matrix `A` with Galerkin coefficients of force given by the function `forcefun(u,a,b,c,args...)`.
-"""
-function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+
+@inline function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
+            N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
 
     n_A = n_u(N)
     @assert size(A,1)==n_A
     @assert size(A,2)==n_A
     @assert length(vs)==n_A
 
-    for j=1:n_A
-        f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
-        for i=1:n_A
-            A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
-        end
-    end
-end
 
-
-function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where T <: Real
-
-    n_A = n_u(N)
-    @assert size(A,1)==n_A
-    @assert size(A,2)==n_A
-    @assert length(vs)==n_A
-
-
-    for j=1:n_A
+    @inbounds for j=1:n_A
         f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
         for i=1:n_A
             # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
@@ -40,7 +41,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun:
     end
 end
 
-function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat,vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat::Array{T,3},vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
 
     n_A = n_u(N+Nshift)
     n_A2 = n_u(N)
@@ -76,7 +77,7 @@ function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) wh
     return A
 end
 
-function mat_force(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where T <: Real
+function mat_force(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
@@ -124,13 +125,20 @@ end
 #
 #     return A,B, vs
 # end
-function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
+function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
     # T = typeof(a)
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
 
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
+
+    # mat_force_galerkin!(A[1:n_mat,1:n_mat],cmat,vs,N ,inertial,a,b,c;kwargs...)
+    # mat_force_galerkin!(A[n_mat+1:end,n_mat+1:end],cmat,vs,N ,inertialmag,a,b,c;kwargs...)
+    #
+    # mat_force_galerkin!(B[1:n_mat,1:n_mat],cmat,vs,N ,coriolis,a,b,c,Ω;kwargs...)
+    # mat_force_galerkin!(B[1:n_mat,n_mat+1:end],cmat,vs,N ,lorentz,a,b,c,b0;kwargs...)
+    # mat_force_galerkin!(B[n_mat+1:end,1:n_mat],cmat,vs,N ,advection,a,b,c,b0;kwargs...)
 
     A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c; kwargs...)
     A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c; kwargs...)

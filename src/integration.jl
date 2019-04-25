@@ -78,8 +78,9 @@ end
 
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
-function int_polynomial_ellipsoid(p,cmat)
-        ip = zero(eltype(cmat))
+
+@inline function int_polynomial_ellipsoid(p::Polynomial{T},cmat::Array{T,3}) where T <: Real
+        ip = zero(T)
         cs = coefficients(p)
         exps = exponents.(monomial.(terms(p)))
         @inbounds @simd for i=1:length(cs)
@@ -104,21 +105,23 @@ function truncpoly(p,thresh=eps())
 end
 
 truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
-
-function inner_product(cmat,u,v; thresh=eps())
+function dotp(u::Array{P,1},v::Array{P,1}) where {T<: Real, P<:Polynomial{T}}
+    return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
+end
+function inner_product(cmat::Array{T,3},u::Array{P,1},v::Array{P,1}; thresh=eps()) where {T<: Real, P<:Polynomial{T}}
     if thresh != eps()
         u=truncpolyvec(u,thresh)
         v=truncpolyvec(v,thresh)
     end
 
-    duv = dot(u,v)
-    ip = zero(eltype(cmat))
-    cs = coefficients(duv)
-    exps = exponents.(monomial.(terms(duv)))
-    @inbounds @simd for i=1:length(cs)
-        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-    end
-    return ip
+    duv = dotp(u,v)
+    # ip = zero(eltype(cmat))
+    # cs = coefficients(duv)
+    # exps = exponents.(monomial.(terms(duv)))
+    # @inbounds @simd for i=1:length(cs)
+    #     ip+=cs[i]*cmat[(exps[i] .+ 1)...]
+    # end
+    return int_polynomial_ellipsoid(duv,cmat)
 end
 
 """
