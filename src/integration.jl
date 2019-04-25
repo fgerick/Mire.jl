@@ -106,10 +106,12 @@ end
 truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
 
 function inner_product(cmat,u,v; thresh=eps())
-    ut=truncpolyvec(u,thresh)
-    vt=truncpolyvec(v,thresh)
+    if thresh != eps()
+        u=truncpolyvec(u,thresh)
+        v=truncpolyvec(v,thresh)
+    end
 
-    duv = dot(ut,vt)
+    duv = dot(u,v)
     ip = zero(eltype(cmat))
     cs = coefficients(duv)
     exps = exponents.(monomial.(terms(duv)))
