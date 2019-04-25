@@ -23,7 +23,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Func
 end
 
 
-function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where T <: Real
 
     n_A = n_u(N)
     @assert size(A,1)==n_A
@@ -35,7 +35,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},cmat,vs,N::Integer, forcefun:
         f = forcefun(vs[j],a,b,c,args...) #calculate f(uⱼ)
         for i=1:n_A
             # A[i,j] = inner_product(vs[i],f,a,b,c) # calculates ∫ <uᵢ,f(uⱼ)> dV
-            A[i,j] = inner_product(cmat,vs[i],f)
+            A[i,j] = inner_product(cmat,vs[i],f, kwargs...)
         end
     end
 end
@@ -76,11 +76,11 @@ function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) wh
     return A
 end
 
-function mat_force(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force(N::Integer,cmat,vs, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where T <: Real
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
-    mat_force_galerkin!(A,cmat,vs,N ,forcefun,a,b,c,args...)
+    mat_force_galerkin!(A,cmat,vs,N ,forcefun,a,b,c,args...;kwargs...)
     return A
 end
 function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
@@ -124,7 +124,7 @@ end
 #
 #     return A,B, vs
 # end
-function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
+function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
     # T = typeof(a)
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
@@ -132,17 +132,17 @@ function assemblemhd(N::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
 
-    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c)
+    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c; kwargs...)
+    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c; kwargs...)
 
-    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω)
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0)
+    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
+    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0; kwargs...)
 
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0)
+    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0; kwargs...)
 
     return A,B, vs
 end
-function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T<:Real
+function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
     # T = typeof(a)
     n_mat = n_u(N+Nshift)
     n_mat2 = n_u(N)
@@ -152,13 +152,13 @@ function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0) where T
     A = spzeros(T,2n_mat,2n_mat2)
     B = spzeros(T,2n_mat,2n_mat2)
 
-    A[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c)
-    A[n_mat+1:end,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertialmag,a,b,c)
+    A[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertial,a,b,c; kwargs...)
+    A[n_mat+1:end,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,inertialmag,a,b,c; kwargs...)
 
-    B[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,coriolis,a,b,c,Ω)
-    B[1:n_mat,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,lorentz,a,b,c,b0)
+    B[1:n_mat,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,coriolis,a,b,c,Ω; kwargs...)
+    B[1:n_mat,n_mat2+1:end] .= mat_force_shift(N,Nshift,cmat,vs,vs2,lorentz,a,b,c,b0; kwargs...)
 
-    B[n_mat+1:end,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,advection,a,b,c,b0)
+    B[n_mat+1:end,1:n_mat2] .= mat_force_shift(N,Nshift,cmat,vs,vs2,advection,a,b,c,b0; kwargs...)
 
     return A,B, vs
 end

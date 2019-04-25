@@ -96,8 +96,20 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
-function inner_product(cmat,u,v)
-    duv = dot(u,v)
+function truncpoly(p,thresh=eps())
+    c = coefficients(p)
+    m = monomials(p)
+    t = abs.(c) .> thresh
+    return sum(c[t].*m[t])
+end
+
+truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
+
+function inner_product(cmat,u,v; thresh=eps())
+    ut=truncpolyvec(u,thresh)
+    vt=truncpolyvec(v,thresh)
+
+    duv = dot(ut,vt)
     ip = zero(eltype(cmat))
     cs = coefficients(duv)
     exps = exponents.(monomial.(terms(duv)))
