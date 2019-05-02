@@ -103,10 +103,10 @@ coriolis(u::Array{P,1},a::T,b::T,c::T,Ω::Union{Array{T,1},Array{P,1}}) where {T
 
 #magnetic:
 inertialmag(B::Array{P,1},a::T,b::T,c::T) where {T<:Real, P<:Polynomial{T}}  = B
-lorentz(B::Array{P,1},a::T,b::T,c::T,B0::Array{S,1}) where {T<:Real, P<:Polynomial{T},S<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
+lorentz(B::Array{P,1},a::T,b::T,c::T,B0) where {T<:Real, P<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
 # lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
-advection(u::Array{P,1},a::T,b::T,c::T,B0::Array{S,1}) where {T<:Real, P<:Polynomial{T},S<:Polynomial{T}}  = curl(u × B0)
+advection(u::Array{P,1},a::T,b::T,c::T,B0) where {T<:Real, P<:Polynomial{T}}  = curl(u × B0)
 # diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
 
 """
