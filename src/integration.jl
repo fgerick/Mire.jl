@@ -79,7 +79,7 @@ end
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
-@inline function int_polynomial_ellipsoid(p::Polynomial{T},cmat::Array{T,3}) where T <: Real
+@inline function int_polynomial_ellipsoid(p::Polynomial{T},cmat::Array{S,3}) where {T <: Number, S<:Real}
         ip = zero(T)
         cs = coefficients(p)
         exps = exponents.(monomial.(terms(p)))
@@ -108,7 +108,7 @@ truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
 function dotp(u::Array{P,1},v::Array{P,1}) where {T<: Number, P<:Polynomial{T}}
     return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
 end
-function inner_product(cmat::Array{T,3},u::Array{P,1},v::Array{P,1}; thresh=eps()) where {T<: Number, P<:Polynomial{T}}
+function inner_product(cmat::Array{S,3},u::Array{P,1},v::Array{P,1}; thresh=eps()) where {S<:Real,T<: Number, P<:Polynomial{T}}
     if thresh != eps()
         u=truncpolyvec(u,thresh)
         v=truncpolyvec(v,thresh)
