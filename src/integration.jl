@@ -153,18 +153,30 @@ function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,
         zero(BigFloat)
     end
 end
-# (1/(8 Gamma[
-#   1/2 (5 + i + j + k)]))(1 + (-1)^i) (1 + (-1)^j) (1 + (-1)^k) a^(
-#  1 + i) b^(1 + j) c^(
-#  1 + k) (d^(3 + i + j + k) - e^(3 + i + j + k)) Gamma[(1 + i)/
-#   2] Gamma[(1 + j)/2] Gamma[(1 + k)/2]
-
 
 function cacheint_truncated(n::Int,a::T,b::T,c::T,s0::T,s1::T) where T<:Real
     Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
     for i=0:Nmax,j=0:Nmax,k=0:Nmax
         cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,s0,s1)
+    end
+    return cachedmat
+end
+
+# function to integrate ∫x^iy^jz^k/(x^2/a^4+y^2/b^4) dV
+function int_monomial_ellipsoid_projected_ephi(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
+    if iseven(i) && iseven(j) && iseven(k)
+        a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(4*(i+j)*gamma((3+i+j+k)/2))
+    else
+        zero(BigFloat)
+    end
+end
+
+function cacheint_projected_ephi(n::Int,a::T,b::T,c::T) where T<:Real
+    Nmax=4n
+    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
+    for i=0:Nmax,j=0:Nmax,k=0:Nmax
+        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_projected_ephi(big(i),big(j),big(k),a,b,c)
     end
     return cachedmat
 end
