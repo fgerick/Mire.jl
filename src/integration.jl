@@ -105,10 +105,10 @@ function truncpoly(p,thresh=eps())
 end
 
 truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
-function dotp(u::Array{P,1},v::Array{P,1}) where {T<: Real, P<:Polynomial{T}}
+function dotp(u::Array{P,1},v::Array{P,1}) where {T<: Number, P<:Polynomial{T}}
     return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
 end
-function inner_product(cmat::Array{T,3},u::Array{P,1},v::Array{P,1}; thresh=eps()) where {T<: Real, P<:Polynomial{T}}
+function inner_product(cmat::Array{T,3},u::Array{P,1},v::Array{P,1}; thresh=eps()) where {T<: Number, P<:Polynomial{T}}
     if thresh != eps()
         u=truncpolyvec(u,thresh)
         v=truncpolyvec(v,thresh)
