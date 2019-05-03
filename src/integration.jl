@@ -165,7 +165,7 @@ end
 
 # function to integrate ∫x^iy^jz^k/(x^2/a^4+y^2/b^4)^2 dV
 function int_monomial_ellipsoid_projected_ephi(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
-    if iseven(i) && iseven(j) && iseven(k)
+    if iseven(i) && iseven(j) && iseven(k) && (i+j+k>1)
         # a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(4*(i+j)*gamma((3+i+j+k)/2))
         a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/((i+j-2)*(i+j)*(i+j+k-1)*gamma((i+j+k-1)/2))
     else
