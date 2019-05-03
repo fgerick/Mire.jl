@@ -80,7 +80,7 @@ end
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
 @inline function int_polynomial_ellipsoid(p,cmat)
-        ip = zero(T)
+        ip = zero(eltype(cmat))
         cs = coefficients(p)
         exps = exponents.(monomial.(terms(p)))
         @inbounds @simd for i=1:length(cs)
