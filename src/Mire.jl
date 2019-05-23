@@ -15,6 +15,12 @@ include("integration.jl")
 
 export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
+
+# include miscellaneous function for analysis
+include("misc/analysis.jl")
+include("misc/tracking.jl")
+#don't export them -> need Mire. prefix
+
 # Cartesian coordinates as polynomial variables
 
 @polyvar x y z
