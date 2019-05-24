@@ -7,8 +7,8 @@ end
 function plot_velocity_equator_uphi(a,b,v1; ngrid=50, kwargs...)
 
     X, Y = __mgrid(range(-a,stop=a,length=ngrid),range(-b,stop=b,length=ngrid))
-    ux =  real.([v1[1](x=>xt,y=>yt,z=>0) for (xt,yt) in zip(X,Y)])
-    uy =  real.([v1[2](x=>xt,y=>yt,z=>0) for (xt,yt) in zip(X,Y)])
+    ux =  real.([v1[1](Mire.x=>xt,Mire.y=>yt,Mire.z=>0) for (xt,yt) in zip(X,Y)])
+    uy =  real.([v1[2](Mire.x=>xt,Mire.y=>yt,Mire.z=>0) for (xt,yt) in zip(X,Y)])
     radius = .√(X.^2/a^2+Y.^2/b^2)
     u = .√(ux.^2+uy.^2)
     phi = atan.(Y/b,X/a);

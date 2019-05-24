@@ -121,12 +121,12 @@ Reconstructs velocity u, following Vidal & Cebron 2017 eq. (3.5).
 
 If `norm` keyword is set `true` the velocity is normalised to satisfy \$\\int\\langle u,v\\rangle dV\$.
 """
-function eigenvel(N::Integer,vs,αs,a::T,b::T,c::T; norm =true) where T<: Real
+function eigenvel(N::Integer,vs,αs,a::T,b::T,c::T; norm =false) where T<: Real
     vo= sum([αs[i]*vs[i] for i=1:length(vs)])
     return norm ? vo/√complex(inner_product(vo,vo,a,b,c)) : vo
 end
 
-eigenvel(N::Integer,vs,αs,n_ev::Integer,a::T,b::T,c::T; norm =true) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c,norm=norm)
+eigenvel(N::Integer,vs,αs,n_ev::Integer,a::T,b::T,c::T; norm =false) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c,norm=norm)
 
 """
     angularmom(u,a,b,c)
