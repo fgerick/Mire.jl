@@ -20,7 +20,7 @@ function plot_velocity_equator_uphi(a,b,v1; ngrid=50, kwargs...)
     uphi[outsideellipse].=0.
     uphio = copy(uphi)
 
-    uphi.-=maximum(uphi)
+    # uphi.-=maximum(uphi)
 
     streamplot(Float64.(X), Float64.(Y), Float64.(ux),
             Float64.(uy) ; color=Float64.(uphi), kwargs...)

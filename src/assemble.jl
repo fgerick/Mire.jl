@@ -22,8 +22,24 @@
 #     end
 # end
 
+"""
+    mat_force_galerkin!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
 
-@inline function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
+DOCSTRING
+
+#Arguments:
+- `A`: DESCRIPTION
+- `cmat`: DESCRIPTION
+- `vs`: DESCRIPTION
+- `N`: DESCRIPTION
+- `forcefun`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `args`: DESCRIPTION
+- `kwargs`: DESCRIPTION
+"""
+function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
             N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
 
     n_A = n_u(N)
@@ -40,6 +56,7 @@
         end
     end
 end
+
 
 function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat::Array{T,3},vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
 
@@ -58,8 +75,10 @@ function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat::Array{T,3},vs,vs2
         end
     end
 end
+
+
 """
-    mat_force(N,vs,forcefun,a,b,c, args...)
+    mat_force(N::Integer, vs, forcefun::Function, a::T, b::T, c::T, args...) where T <: Real
 
 Allocates new matrix `A` and fills elements by calling
 mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...).
@@ -68,6 +87,15 @@ Cached version:
 mat_force(N,cmat,vs,forcefun,a,b,c, args...)
 
 where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
+
+#Arguments:
+- `N`: DESCRIPTION
+- `vs`: DESCRIPTION
+- `forcefun`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `args`: DESCRIPTION
 """
 function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
     n_combos = n_u(N)
@@ -125,6 +153,22 @@ end
 #
 #     return A,B, vs
 # end
+
+"""
+    assemblemhd(N::Int, cmat::Array{T, 3}, a::T, b::T, c::T, Ω, b0; kwargs...) where T <: Real
+
+DOCSTRING
+
+#Arguments:
+- `N`: DESCRIPTION
+- `cmat`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `Ω`: DESCRIPTION
+- `b0`: DESCRIPTION
+- `kwargs`: DESCRIPTION
+"""
 function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
     # T = typeof(a)
     n_mat = n_u(N)
@@ -190,8 +234,10 @@ end
 #     return A,B, vs
 # end
 
+
+
 """
-    assemblehd(N,a,b,c,Ω,b0)
+    assemblehd(N::Int, a::T, b::T, c::T, Ω) where T <: Real
 
 Assembles HD eigen system, such that
 λAx=Bx
@@ -199,6 +245,13 @@ Assembles HD eigen system, such that
 This is the inviscid model, with
 
 ∂ₜu = -2Ω×u.
+
+#Arguments:
+- `N`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `Ω`: DESCRIPTION
 """
 function assemblehd(N::Int,a::T,b::T,c::T,Ω) where T <: Real
 
