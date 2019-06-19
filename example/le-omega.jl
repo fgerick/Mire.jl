@@ -23,5 +23,5 @@ const c = 1.0
     end
 end
 
-rms_all = pmap(u->rmsp(u,N,vs,a,b,c,n,20),us)
+rms_all = pmap(u->rmsp(u,N,vs,a,b,c,n,30),us)
 BSON.@save joinpath(datapath,"rms_all_mire.bson") rms_all
