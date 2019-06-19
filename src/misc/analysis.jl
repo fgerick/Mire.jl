@@ -75,7 +75,7 @@ function rms_ellipsoid(v1,a,b,c,ngrid)
     √mean(ux.^2+uy.^2+uz.^2)
 end
 function rmsle(N,vs,u,a,b,c,ngrid=40)
-    v_ile=Mire.eigenvel(N,vs,u./mean(u),a,b,c,norm=false)
+    v_ile=Mire.eigenvel(N,vs,u,a,b,c,norm=false)
     v_geo,v_ageo = geoageo(v_ile,a,b,c)
     rms2=rms_eqplane(v_geo,a,b,ngrid)
     rms3=rms_eqplane(v_ageo,a,b,ngrid)
