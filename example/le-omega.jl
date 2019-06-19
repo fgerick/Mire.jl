@@ -24,7 +24,7 @@ cmat = Mire.cacheint(N,a,b,c)
         [rmsle(N, vs, us[1:end÷2,i]/mean(us[:,i]), a, b, c,ngrid) for i=1:n]
     end
 
-    function rms_parperp(N,vs,cmat,u)
+    function rms_parperp(N,vs,cmat,a,b,c,u)
     v_ile=Mire.eigenvel(N,vs,real.(u),a,b,c,norm=false)
     v_perp = v_ile[1]^2+v_ile[2]^2
     v_par = v_ile[3]^2
@@ -36,5 +36,5 @@ end
 end
 
 # rms_all = pmap(u->rmsp(u,N,vs,a,b,c,n,30),us)
-rms_all = pmap(u->rms_parperp(N,vs,cmat,u),us)
+rms_all = pmap(u->rms_parperp(N,vs,cmat,a,b,c,u),us)
 BSON.@save joinpath(datapath,"rms_all_mire_parperp.bson") rms_all
