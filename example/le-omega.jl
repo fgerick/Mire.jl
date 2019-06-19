@@ -19,7 +19,7 @@ const c = 1.0
 
 
     function rmsp(us,N,vs,a,b,c,n,ngrid)
-        [rmsle(N, vs, us[1:end÷2,i], a, b, c,ngrid) for i=1:n]
+        [rmsle(N, vs, us[1:end÷2,i]/mean(us[:,i]), a, b, c,ngrid) for i=1:n]
     end
 end
 
