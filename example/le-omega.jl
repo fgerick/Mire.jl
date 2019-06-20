@@ -34,7 +34,7 @@ cmat = Mire.cacheint(N,a,b,c)
     end
 
     function rmspp(N,vs,cmat,a,b,c,us,n)
-        [rms_parperp(N, vs,cmat, a, b, c, us[1:end÷2,i]) for i=1:n]
+        [rms_parperp(N, vs,cmat, a, b, c, us[1:end÷2,i]/mean(us[:,i])) for i=1:n]
     end
 end
 
