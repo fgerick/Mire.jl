@@ -1,7 +1,7 @@
 using Distributed
 
 addprocs(24)
-@everywhere using BSON, Mire, TypedPolynomials, MultivariatePolynomials, LinearAlgebra, Statistics
+@everywhere using BSON, Mire, SparseArrays, TypedPolynomials, MultivariatePolynomials, LinearAlgebra, Statistics
 
 datapath = "/cluster/home/gerickf/data/paperdata"
 
