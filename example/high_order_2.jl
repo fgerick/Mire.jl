@@ -3,7 +3,7 @@ using Distributed
 addprocs(24)
 @everywhere using BSON, Mire, TypedPolynomials, MultivariatePolynomials, LinearAlgebra, Statistics
 
-# datapath = "/cluster/home/gerickf/data/paperdata"
+datapath = "/cluster/home/gerickf/data/paperdata"
 
 
 # const n = length(as[1])
@@ -58,4 +58,4 @@ end
 
 @time LHS,RHS,vs = assemblemhd_parallel(N,cmat,a,b,c,Ω,b0)
 
-# BSON.@save joinpath(datapath,"high_order_N$(N).bson") LHS,RHS
+BSON.@save joinpath(datapath,"high_order_N$(N).bson") LHS,RHS
