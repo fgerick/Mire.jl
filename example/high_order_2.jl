@@ -5,7 +5,7 @@ addprocs(24)
 
 datapath = "/cluster/home/gerickf/data/paperdata"
 
-N=ARGS[1]
+N=parse(Int64,ARGS[1])
 # const n = length(as[1])
 const a = 1.25
 const b = 0.8
