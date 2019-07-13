@@ -5,7 +5,7 @@ addprocs(24)
 
 datapath = "/cluster/home/gerickf/data/paperdata"
 
-
+N=ARGS[1]
 # const n = length(as[1])
 const a = 1.25
 const b = 0.8
@@ -13,7 +13,7 @@ const c = 1.0
 const Le = 1e-7
 const Ω = 1/Le *Mire.ez
 const b0 = [-Mire.y/b^2,Mire.x/a^2,0]
-const N = 7
+# const N = 7
 cmat = Mire.cacheint(N,a,b,c)
 
 @everywhere begin
