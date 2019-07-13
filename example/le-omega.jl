@@ -5,7 +5,7 @@ addprocs()
 
 datapath = "/cluster/home/gerickf/data/paperdata"
 
-BSON.@load joinpath(datapath,"leomega_mire.bson") Les as us vs N
+BSON.@load joinpath(datapath,"leomega_mire_N3.bson") Les as us vs N
 
 const n = length(as[1])
 const a = 1.25
@@ -31,52 +31,53 @@ cmat = Mire.cacheint(N,a,b,c)
     end
 
 
-    function rmsle_2(N,vs,u,a,b,c,ngrid=40)
-        v1=Mire.eigenvel(N,vs,real.(u),a,b,c,norm=false)
 
-        ϕ = range(0,stop=2pi,length=ngrid)
-        s = range(eps(),stop=1,length=ngrid)
+function rmsle_2(N,vs,u,a,b,c,ngrid=40)
+    v1=Mire.eigenvel(N,vs,real.(u/mean(u)),a,b,c,norm=false)
 
-        Φ,S = __mgrid(ϕ,s)
-        X,Y = a*S.*cos.(Φ), b*S.*sin.(Φ)
+    ϕ = range(0,stop=2pi,length=ngrid)
+    s = range(eps(),stop=1,length=ngrid)
+
+    Φ,S = __mgrid(ϕ,s)
+    X,Y = a*S.*cos.(Φ), b*S.*sin.(Φ)
 
 
 
-        ux =  real.([v1[1](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
-        uy =  real.([v1[2](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
-        uz =  real.([v1[3](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
+    ux =  real.([v1[1](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
+    uy =  real.([v1[2](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
+    uz =  real.([v1[3](Mire.x=>xt, Mire.y=>yt, Mire.z=>0) for (xt,yt) in zip(X,Y)])
 
-        Js = J.(X,Y,a,b,c)
-        u_polar = [J*[ux,uy,uz] for (J,ux,uy,uz) in zip(Js,ux,uy,uz)];
-        us,uphi,uz = [getindex.(u_polar,i) for i in 1:3];
-        fact = @. sqrt(b^2*cos(Φ).^2 + a^2*sin(Φ)^2);
-        uphi./=fact
-        meanuphi = mean(uphi,dims=2)
-        uphi .-= meanuphi
-        uphi.*=fact
+    Js = J.(X,Y,a,b,c)
+    u_polar = [J*[ux,uy,uz] for (J,ux,uy,uz) in zip(Js,ux,uy,uz)];
+    us,uphi,uz = [getindex.(u_polar,i) for i in 1:3];
+    fact = @. sqrt(b^2*cos(Φ).^2 + a^2*sin(Φ)^2);
+    uphi./=fact
+    meanuphi = mean(uphi,dims=2)
+    uphi .-= meanuphi
+    uphi.*=fact
 
-        rms_ug = √(sum(meanuphi.^2))
-    #     rms_ag = .√(sum((uphi.-uphimean).^2 .+ us.^2 .+ uz.^2))
-        rms_ag = √(sum(us.^2 .+ uphi.^2 .+ uz.^2))
-        return rms_ag/rms_ug
-    end
+    rms_ug = √(ngrid*sum(meanuphi.^2))
+#     rms_ag = .√(sum((uphi.-uphimean).^2 .+ us.^2 .+ uz.^2))
+    rms_ag = √(sum(us.^2 .+ uphi.^2 .+ uz.^2))
+    return rms_ag/rms_ug
+end
 
     function rmsp(us,N,vs,a,b,c,n,ngrid)
-        [rmsle_2(N, vs, us[1:end÷2,i]/mean(us[:,i]), a, b, c,ngrid) for i=1:n]
+        [rmsle(N, vs, us[1:end÷2,i], a, b, c,ngrid) for i=1:n]
     end
 
-    function rms_parperp(N,vs,cmat,a,b,c,u)
-        v_ile=Mire.eigenvel(N,vs,real.(u),a,b,c,norm=false)
-        v_perp = v_ile[1]^2+v_ile[2]^2
-        v_par = v_ile[3]^2
-        rms_par=Mire.int_polynomial_ellipsoid(v_perp,cmat)
-        rms_perp=Mire.int_polynomial_ellipsoid(v_par,cmat)
-        return real(rms_perp)/real(rms_par)
-    end
-
-    function rmspp(N,vs,cmat,a,b,c,us,n)
-        [rms_parperp(N, vs,cmat, a, b, c, us[1:end÷2,i]/mean(us[:,i])) for i=1:n]
-    end
+    # function rms_parperp(N,vs,cmat,a,b,c,u)
+    #     v_ile=Mire.eigenvel(N,vs,real.(u),a,b,c,norm=false)
+    #     v_perp = v_ile[1]^2+v_ile[2]^2
+    #     v_par = v_ile[3]^2
+    #     rms_par=Mire.int_polynomial_ellipsoid(v_perp,cmat)
+    #     rms_perp=Mire.int_polynomial_ellipsoid(v_par,cmat)
+    #     return real(rms_perp)/real(rms_par)
+    # end
+    #
+    # function rmspp(N,vs,cmat,a,b,c,us,n)
+    #     [rms_parperp(N, vs,cmat, a, b, c, us[1:end÷2,i]/mean(us[:,i])) for i=1:n]
+    # end
 end
 
 rms_all = pmap(u->rmsp(u,N,vs,a,b,c,n,30),us)

@@ -59,22 +59,9 @@ v3(n::Int,m::Int,l::Int,a,b,c) = ∇(Π(n,m,l)*F(a,b,c))×ez
 Computes all combos i,j,k satisfying i+j+k ≤ N.
 """
 function combos(N::Int)
-    gpairs = Vector{Int}[]
-    hpairs = Vector{Int}[]
-    @inbounds for k=0:N-1, i=0:N-1, j=0:N-1
-        if (i + j + k <= N-1)
-            if k==0
-                # if i==j==0
-                #     push!(hpairs,[i,j,k])
-                # end
-                push!(gpairs,[i,j,k])
-            else
-                push!(hpairs,[i,j,k])
-            end
-        end
-    end
-    return gpairs, hpairs
-end
+    [[i,j,k] for i=0:N for j=0:N for k=0 if (i+j+k<N)],
+    [[i,j,k] for i=0:N for j=0:N for k=1:N if (i+j+k<N)]
+ end
 
 
 """
