@@ -10,7 +10,7 @@ a,b,c = 1.,1.,1.
 Le = 1e-6
 Ω = 1/Le *Mire.ez
 α = 0.01
-v0_wu = [0,-xz/c^2,xy/b^2]
+v0_wu = [0,-x*z/c^2,x*y/b^2]
 b0 = [-Mire.y/b^2,Mire.x/a^2,0] .+ α*v0_wu
 
 N=3:2:35
