@@ -6,11 +6,12 @@ datapath = "/cluster/home/gerickf/data/paperdata"
 # datapath = "/Users/gerickf/data/paperdata/"
 
 
-a,b,c = 1.25,0.8,1.
-Le = 1e-7
+a,b,c = 1.,1.,1.
+Le = 1e-6
 Ω = 1/Le *Mire.ez
 α = 0.01
-b0 = [-Mire.y/b^2,Mire.x/a^2,0] .+ α*[x^2,0,0]
+v0_wu = [0,-xz/c^2,xy/b^2]
+b0 = [-Mire.y/b^2,Mire.x/a^2,0] .+ α*v0_wu
 
 N=3:2:35
 
