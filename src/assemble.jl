@@ -7,7 +7,7 @@
 #
 # Fills Matrix `A` with Galerkin coefficients of force given by the function `forcefun(u,a,b,c,args...)`.
 # """
-# function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+# function mat_force_galerkin!(A::AbstractArray{T,2},vs,N::Integer, forcefun::Function,a::T,b::T,c::T, args...) where T
 #
 #     n_A = n_u(N)
 #     @assert size(A,1)==n_A
@@ -23,7 +23,7 @@
 # end
 
 """
-    mat_force_galerkin!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
+    mat_force_galerkin!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
 
 DOCSTRING
 
@@ -40,7 +40,7 @@ DOCSTRING
 - `kwargs`: DESCRIPTION
 """
 function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
-            N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
+            N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
 
     n_A = n_u(N)
     @assert size(A,1)==n_A
@@ -58,7 +58,7 @@ function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Ar
 end
 
 
-function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat::Array{T,3},vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force_galerkin_shift!(A::AbstractArray{T,2},cmat::Array{T,3},vs,vs2,N::Int,Nshift::Int, forcefun::Function,a::T,b::T,c::T, args...) where T
 
     n_A = n_u(N+Nshift)
     n_A2 = n_u(N)
@@ -78,7 +78,7 @@ end
 
 
 """
-    mat_force(N::Integer, vs, forcefun::Function, a::T, b::T, c::T, args...) where T <: Real
+    mat_force(N::Integer, vs, forcefun::Function, a::T, b::T, c::T, args...) where T
 
 Allocates new matrix `A` and fills elements by calling
 mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...).
@@ -97,7 +97,7 @@ where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 - `c`: DESCRIPTION
 - `args`: DESCRIPTION
 """
-function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
@@ -105,14 +105,14 @@ function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) wh
     return A
 end
 
-function mat_force(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T <: Real, P <: Polynomial{T}}
+function mat_force(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
     mat_force_galerkin!(A,cmat,vs,N ,forcefun,a,b,c,args...;kwargs...)
     return A
 end
-function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Function,a::T,b::T,c::T, args...) where T <: Real
+function mat_force_shift(N::Integer,Nshift::Integer,cmat,vs,vs2, forcefun::Function,a::T,b::T,c::T, args...) where T
     n_combos = n_u(N+Nshift)
     n_combos2 = n_u(N)
 
@@ -135,7 +135,7 @@ end
 #
 # with Ω = 1/Le * eΩ.
 # """
-# function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0) where T <: Real
+# function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0) where T
 #     # T = typeof(a)
 #     n_mat = n_u(N)
 #     vs = vel(N,a,b,c)
@@ -155,7 +155,7 @@ end
 # end
 
 """
-    assemblemhd(N::Int, cmat::Array{T, 3}, a::T, b::T, c::T, Ω, b0; kwargs...) where T <: Real
+    assemblemhd(N::Int, cmat::Array{T, 3}, a::T, b::T, c::T, Ω, b0; kwargs...) where T
 
 DOCSTRING
 
@@ -169,8 +169,8 @@ DOCSTRING
 - `b0`: DESCRIPTION
 - `kwargs`: DESCRIPTION
 """
-function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
-    # T = typeof(a)
+function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) where T
+   # T = typeof(a)
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
 
@@ -194,7 +194,7 @@ function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) wh
 
     return A,B, vs
 end
-function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0; kwargs...) where T<:Real
+function assemblemhd_shift(N::Int,Nshift::Int,cmat,a::T,b::T,c::T,Ω,b0; kwargs...) where T
     # T = typeof(a)
     n_mat = n_u(N+Nshift)
     n_mat2 = n_u(N)
@@ -237,7 +237,7 @@ end
 
 
 """
-    assemblehd(N::Int, a::T, b::T, c::T, Ω) where T <: Real
+    assemblehd(N::Int, a::T, b::T, c::T, Ω) where T
 
 Assembles HD eigen system, such that
 λAx=Bx
@@ -253,7 +253,7 @@ This is the inviscid model, with
 - `c`: DESCRIPTION
 - `Ω`: DESCRIPTION
 """
-function assemblehd(N::Int,a::T,b::T,c::T,Ω) where T <: Real
+function assemblehd(N::Int,a::T,b::T,c::T,Ω) where T
 
     vs = vel(N,a,b,c)
 
@@ -262,7 +262,7 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω) where T <: Real
     return A,B, vs
 end
 
-function assemblehd(N::Int,cmat,a::T,b::T,c::T,Ω) where T <: Real
+function assemblehd(N::Int,cmat,a::T,b::T,c::T,Ω) where T
 
     vs = vel(N,a,b,c)
 

@@ -67,7 +67,7 @@ end
 # end
 
 
-function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
+function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T) where T
     if iseven(i) && iseven(j) && iseven(k)
         a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(8*gamma((5+i+j+k)/2))
     else
@@ -127,7 +127,7 @@ end
 """
 Function to precalculate monomial integrations.
 """
-function cacheint(n::Int,a::T,b::T,c::T) where T<:Real
+function cacheint(n::Int,a::T,b::T,c::T) where T
     Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
     for i=0:Nmax,j=0:Nmax,k=0:Nmax
@@ -173,7 +173,7 @@ function int_monomial_ellipsoid_projected_ephi(i::BigInt,j::BigInt,k::BigInt,a::
     end
 end
 
-function cacheint_projected_ephi(n::Int,a::T,b::T,c::T) where T<:Real
+function cacheint_projected_ephi(n::Int,a::T,b::T,c::T) where T 
     Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
     for i=0:Nmax,j=0:Nmax,k=0:Nmax

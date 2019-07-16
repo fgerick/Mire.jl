@@ -89,17 +89,17 @@ n_u(N::Int) = N1(N)+2N2(N)
 ## Force functions:
 
 #hydro:
-inertial(u::Array{P,1},a::T,b::T,c::T) where {T<:Real, P<:Polynomial{T}} = u
-coriolis(u::Array{P,1},a::T,b::T,c::T,Ω::Union{Array{T,1},Array{P,1}}) where {T<:Real, P<:Polynomial{T}}  = -2*Ω×u
+inertial(u::Array{P,1},a::T,b::T,c::T) where {T, P<:Polynomial{T}} = u
+coriolis(u::Array{P,1},a::T,b::T,c::T,Ω::Union{Array{T,1},Array{P,1}}) where {T, P<:Polynomial{T}}  = -2*Ω×u
 # viscous(u,a,b,c,Ek) = Ek*Δ.(u)
 # viscous(u,a,b,c,Lu,Pm) = Pm/Lu*Δ.(u)
 
 #magnetic:
-inertialmag(B::Array{P,1},a::T,b::T,c::T) where {T<:Real, P<:Polynomial{T}}  = B
-lorentz(B::Array{P,1},a::T,b::T,c::T,B0) where {T<:Real, P<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
+inertialmag(B::Array{P,1},a::T,b::T,c::T) where {T, P<:Polynomial{T}}  = B
+lorentz(B::Array{P,1},a::T,b::T,c::T,B0) where {T, P<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
 # lorentz(B,a,b,c,B0) = curl(B) × B0 + curl(B0) × B + curl(B0) × B0 #experiment
 
-advection(u::Array{P,1},a::T,b::T,c::T,B0) where {T<:Real, P<:Polynomial{T}}  = curl(u × B0)
+advection(u::Array{P,1},a::T,b::T,c::T,B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
 # diffusion(B,a,b,c,B0,Lu) = 1/Lu*Δ.(B+B0)
 
 """
