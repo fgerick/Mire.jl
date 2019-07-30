@@ -52,14 +52,14 @@ function rms_eqplane(v1,a,b,ngrid)
     uz[outsideellipse].=0.
     √sum(ux.^2+uy.^2+uz.^2)
 end
-function truncpoly(p,thresh=eps())
-    c = coefficients(p)
-    m = monomials(p)
-    t = abs.(c) .> thresh
-    return sum(c[t].*m[t])
-end
-
-truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh=thresh) for vi in v]
+# function truncpoly(p,thresh=eps())
+#     c = coefficients(p)
+#     m = monomials(p)
+#     t = abs.(c) .> thresh
+#     return sum(c[t].*m[t])
+# end
+#
+# truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh=thresh) for vi in v]
 
 function rms_ellipsoid(v1,a,b,c,ngrid)
     v = truncpolyvec(v1)
