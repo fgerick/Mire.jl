@@ -1,7 +1,7 @@
 ### Functions to create matrices and assemble the full system.
 
 """
-    mat_force_galerkin!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
+    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
 
 DOCSTRING
 
@@ -17,7 +17,7 @@ DOCSTRING
 - `args`: DESCRIPTION
 - `kwargs`: DESCRIPTION
 """
-function mat_force_galerkin!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
+function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
             N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
 
     n_A = n_u(N)
@@ -36,13 +36,13 @@ end
 
 
 """
-    mat_force(N::Integer, vs, forcefun::Function, a::T, b::T, c::T, args...) where T
+    projectforce(N::Integer, vs, forcefun::Function, a::T, b::T, c::T, args...) where T
 
 Allocates new matrix `A` and fills elements by calling
-mat_force_galerkin!(A,vs,N,forcefun,a,b,c, args...).
+projectforce!(A,vs,N,forcefun,a,b,c, args...).
 
 Cached version:
-mat_force(N,cmat,vs,forcefun,a,b,c, args...)
+projectforce(N,cmat,vs,forcefun,a,b,c, args...)
 
 where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 
@@ -55,19 +55,19 @@ where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 - `c`: DESCRIPTION
 - `args`: DESCRIPTION
 """
-function mat_force(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T
+function projectforce(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
-    mat_force_galerkin!(A,vs,N ,forcefun,a,b,c,args...)
+    projectforce!(A,vs,N ,forcefun,a,b,c,args...)
     return A
 end
 
-function mat_force(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
-    mat_force_galerkin!(A,cmat,vs,N ,forcefun,a,b,c,args...;kwargs...)
+    projectforce!(A,cmat,vs,N ,forcefun,a,b,c,args...;kwargs...)
     return A
 end
 
@@ -93,13 +93,13 @@ function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) wh
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
 
-    A[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,inertial,a,b,c; kwargs...)
-    A[n_mat+1:end,n_mat+1:end] .= mat_force(N,cmat,vs,inertialmag,a,b,c; kwargs...)
+    A[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,inertial,a,b,c; kwargs...)
+    A[n_mat+1:end,n_mat+1:end] .= projectforce(N,cmat,vs,inertialmag,a,b,c; kwargs...)
 
-    B[1:n_mat,1:n_mat] .= mat_force(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
-    B[1:n_mat,n_mat+1:end] .= mat_force(N,cmat,vs,lorentz,a,b,c,b0; kwargs...)
+    B[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
+    B[1:n_mat,n_mat+1:end] .= projectforce(N,cmat,vs,lorentz,a,b,c,b0; kwargs...)
 
-    B[n_mat+1:end,1:n_mat] .= mat_force(N,cmat,vs,advection,a,b,c,b0; kwargs...)
+    B[n_mat+1:end,1:n_mat] .= projectforce(N,cmat,vs,advection,a,b,c,b0; kwargs...)
 
     return A,B, vs
 end
@@ -123,7 +123,7 @@ function assemblehd(N::Int,cmat,a::T,b::T,c::T,Ω) where T
 
     vs = vel(N,a,b,c)
 
-    A = mat_force(N,cmat,vs,inertial,a,b,c)
-    B = mat_force(N,cmat,vs,coriolis,a,b,c,Ω)
+    A = projectforce(N,cmat,vs,inertial,a,b,c)
+    B = projectforce(N,cmat,vs,coriolis,a,b,c,Ω)
     return A,B, vs
 end
