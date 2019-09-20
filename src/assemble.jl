@@ -104,8 +104,6 @@ function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) wh
     return A,B, vs
 end
 
-using AutomaticDocstrings
-
 """
     assemblehd(N::Int, cmat, a::T, b::T, c::T, Ω) where T
 

@@ -11,11 +11,11 @@ TODO Introduction
 Functions for low level control of the problem.
 
 ```@docs
-mat_force
+projectforce
 ```
 
 ```@docs
-mat_force_galerkin!
+projectforce!
 ```
 
 ```@docs
