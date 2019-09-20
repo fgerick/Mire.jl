@@ -21,6 +21,8 @@ function int_ellipsoid_surface(p::Monomial,a::Real,b::Real,c::Real)
     end
 end
 
+int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
+
 """
     int_monomial_ellipsoid(p,a,b,c)
 
@@ -89,7 +91,12 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
         end
         return ip
     end
-int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
+
+
+#alternative dot product
+function dotp(u,v)
+    return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
+end
 
 """
     inner_product(u,v,a,b,c)
@@ -98,17 +105,6 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
-function truncpoly(p,thresh=eps())
-    c = coefficients(p)
-    m = monomials(p)
-    t = abs.(c) .> thresh
-    return sum(c[t].*m[t])
-end
-
-truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
-function dotp(u,v)
-    return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
-end
 function inner_product(cmat,u,v; thresh=eps())
     if thresh != eps()
         u=truncpolyvec(u,thresh)
@@ -116,14 +112,9 @@ function inner_product(cmat,u,v; thresh=eps())
     end
 
     duv = dotp(u,v)
-    # ip = zero(eltype(cmat))
-    # cs = coefficients(duv)
-    # exps = exponents.(monomial.(terms(duv)))
-    # @inbounds @simd for i=1:length(cs)
-    #     ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-    # end
     return int_polynomial_ellipsoid(duv,cmat)
 end
+
 
 """
 Function to precalculate monomial integrations.
@@ -137,32 +128,19 @@ function cacheint(n::Int,a::T,b::T,c::T; kwargs...) where T
     return cachedmat
 end
 
-### Truncated integral
 
-function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,d::Real)
-    if iseven(i) && iseven(j) && iseven(k)
-            return a*b*c*d^3*(a*d)^i*(b*d)^j*(c*d)^k*gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
-        else
-        zero(BigFloat)
-    end
+#truncate polynomial
+
+function truncpoly(p,thresh=eps())
+    c = coefficients(p)
+    m = monomials(p)
+    t = abs.(c) .> thresh
+    return sum(c[t].*m[t])
 end
 
-function int_monomial_ellipsoid_truncated(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real,s0::Real,s1::Real)
-    if iseven(i) && iseven(j) && iseven(k)
-            return a*b*c*a^i*b^j*c^k*(s0^(3+i+j+k)-s1^(3+i+j+k)) * gamma((1 + i)/2)*gamma((1 + j)/2) *gamma((1 + k)/2)/(8gamma(1/2* (5 + i + j + k)))
-        else
-        zero(BigFloat)
-    end
-end
+truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
 
-function cacheint_truncated(n::Int,a::T,b::T,c::T,s0::T,s1::T) where T<:Real
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_truncated(big(i),big(j),big(k),a,b,c,s0,s1)
-    end
-    return cachedmat
-end
+
 
 # function to integrate ∫x^iy^jz^k/(x^2/a^4+y^2/b^4)^2 dV
 function int_monomial_ellipsoid_projected_ephi(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
