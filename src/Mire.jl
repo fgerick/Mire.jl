@@ -69,7 +69,7 @@ function combos(N::Int)
 
 Compute all velocity basis vectors for a given maximal degree N (Lebovitz 1989, eq. 41-42)
 """
-function vel(N::Int,a,b,c)
+function vel(N::Int,a::T,b::T,c::T) where T
     gp,hp = combos(N)
     v_1 = [v1(h...,a,b,c) for h in vcat(gp,hp)]
     v_2 = [v2(h...,a,b,c) for h in vcat(gp,hp)]
@@ -79,10 +79,10 @@ function vel(N::Int,a,b,c)
 end
 
 # Number of basis vectors (Lebovitz/Vidal, Cebron 2017).
-N1(n) = n*(n+1)÷2
-N2(n) = n*(n+1)*(n+2)÷6
+N1(n::Int) = n*(n+1)÷2
+N2(n::Int) = n*(n+1)*(n+2)÷6
 
-n_c(N::Integer) = N1(n)+N2(N)
+n_c(N::Int) = N1(n)+N2(N)
 n_u(N::Int) = N1(N)+2N2(N)
 
 
@@ -102,7 +102,7 @@ advection(u::Array{P,1},a::T,b::T,c::T,B0) where {T, P<:Polynomial{T}}  = curl(u
     eigenvel(N,vs,αs,a,b,c; norm=true)
 Reconstructs velocity u, following Vidal & Cebron 2017 eq. (3.5).
 
-If `norm` keyword is set `true` the velocity is normalised to satisfy \$\\int\\langle u,v\\rangle dV\$.
+If `norm` keyword is set `true` the velocity is normalised to satisfy \$\\int u\\cdot u dV=1\$.
 """
 function eigenvel(N::Integer,vs,αs,a::T,b::T,c::T; norm =false) where T<: Real
     vo= sum([αs[i]*vs[i] for i=1:length(vs)])
