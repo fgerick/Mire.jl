@@ -9,6 +9,10 @@ CurrentModule = Mire
 ```@docs
 mat_force_galerkin!
 ```
+```@docs
+eigenvel
+```
+
 
 
 ## Setting up the eigen problem
