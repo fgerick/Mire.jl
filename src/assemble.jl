@@ -104,7 +104,21 @@ function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) wh
     return A,B, vs
 end
 
+using AutomaticDocstrings
 
+"""
+    assemblehd(N::Int, cmat, a::T, b::T, c::T, Ω) where T
+
+DOCSTRING
+
+#Arguments:
+- `N`: DESCRIPTION
+- `cmat`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `Ω`: DESCRIPTION
+"""
 function assemblehd(N::Int,cmat,a::T,b::T,c::T,Ω) where T
 
     vs = vel(N,a,b,c)

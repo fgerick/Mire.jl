@@ -23,11 +23,6 @@ end
 
 int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
 
-"""
-    int_monomial_ellipsoid(p,a,b,c)
-
-Integrate monomial `p=xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
-"""
 function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     i = big(exponent(p,x))
     j = big(exponent(p,y))
@@ -68,7 +63,20 @@ end
 #     end
 # end
 
+"""
+    int_monomial_ellipsoid(i::BigInt, j::BigInt, k::BigInt, a::T, b::T, c::T; dtype::DataType=BigFloat) where T
 
+DOCSTRING
+
+#Arguments:
+- `i`: DESCRIPTION
+- `j`: DESCRIPTION
+- `k`: DESCRIPTION
+- `a`: DESCRIPTION
+- `b`: DESCRIPTION
+- `c`: DESCRIPTION
+- `dtype`: DESCRIPTION
+"""
 function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=BigFloat) where T
     if iseven(i) && iseven(j) && iseven(k)
         coeff=gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(8*gamma((5+i+j+k)/2))
@@ -82,15 +90,21 @@ end
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
-@inline function int_polynomial_ellipsoid(p,cmat)
-        ip = zero(eltype(cmat))
-        cs = coefficients(p)
-        exps = exponents.(monomial.(terms(p)))
-        @inbounds @simd for i=1:length(cs)
-            ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-        end
-        return ip
+
+"""
+    int_polynomial_ellipsoid(p, cmat)
+
+DOCSTRING
+"""
+function int_polynomial_ellipsoid(p,cmat)
+    ip = zero(eltype(cmat))
+    cs = coefficients(p)
+    exps = exponents.(monomial.(terms(p)))
+    @inbounds @simd for i=1:length(cs)
+        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
     end
+    return ip
+end
 
 
 #alternative dot product
@@ -105,6 +119,17 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
+"""
+    inner_product(cmat, u, v; thresh=eps())
+
+DOCSTRING
+
+#Arguments:
+- `cmat`: DESCRIPTION
+- `u`: DESCRIPTION
+- `v`: DESCRIPTION
+- `thresh`: DESCRIPTION
+"""
 function inner_product(cmat,u,v; thresh=eps())
     if thresh != eps()
         u=truncpolyvec(u,thresh)
