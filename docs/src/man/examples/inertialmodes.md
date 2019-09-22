@@ -65,7 +65,7 @@ esol = eigen(inv(Matrix(B))*A)
 The eigen values and vectors are accessed by `esol.values` and `esol.vectors` respectively.
 
 
-The eigen vectors $\vec{x}_i$ contain the coefficients $x_{ji}$, so that the eigen velocity $\mathbf{v}_i$ is given by
+The eigen vectors $\mathbf{x}_i$ contain the coefficients $x_{ji}$, so that the eigen velocity $\mathbf{v}_i$ is given by
 
 $$\mathbf{v}_i = \sum_{j}x_{ji}\mathbf{u}_j,$$
 

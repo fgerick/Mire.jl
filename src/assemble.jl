@@ -94,12 +94,16 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0; dtype::DataType=BigFloat, kwar
 
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
+    projectforce!(view(A,1:n_mat,1:n_mat),cmat,vs,N, inertial,a,b,c; kwargs...)
+    projectforce!(view(A,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N, inertialmag,a,b,c; kwargs...)
+    projectforce!(view(B,1:n_mat,1:n_mat),cmat,vs,N,coriolis,a,b,c,Ω; kwargs...)
+    projectforce!(view(B,1:n_mat,n_mat+1:2n_mat),cmat,vs,N,lorentz,a,b,c,b0; kwargs...)
+    projectforce!(view(B,n_mat+1:2n_mat,1:n_mat),cmat,vs,N,advection,a,b,c,b0; kwargs...)
+    # A[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,inertial,a,b,c; kwargs...)
+    # A[n_mat+1:end,n_mat+1:end] .= projectforce(N,cmat,vs,inertialmag,a,b,c; kwargs...)
 
-    A[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,inertial,a,b,c; kwargs...)
-    A[n_mat+1:end,n_mat+1:end] .= projectforce(N,cmat,vs,inertialmag,a,b,c; kwargs...)
-
-    B[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
-    B[1:n_mat,n_mat+1:end] .= projectforce(N,cmat,vs,lorentz,a,b,c,b0; kwargs...)
+    # B[1:n_mat,1:n_mat] .= projectforce(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
+    # B[1:n_mat,n_mat+1:end] .= projectforce(N,cmat,vs,lorentz,a,b,c,b0; kwargs...)
 
     B[n_mat+1:end,1:n_mat] .= projectforce(N,cmat,vs,advection,a,b,c,b0; kwargs...)
 
