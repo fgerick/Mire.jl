@@ -63,7 +63,8 @@ function projectforce(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...)
     return A
 end
 
-function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
+    forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)
@@ -87,7 +88,8 @@ left hand side `B` and basis vectors `vs`.
 - `dtype`: datatype, default `BigFloat` for integration of monomials
 - `kwargs`: other keyword arguments passed to lower functions
 """
-function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0; dtype::DataType=BigFloat, kwargs...) where T
+function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
+                     dtype::DataType=BigFloat, kwargs...) where T
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
     cmat = cacheint(N,a,b,c; dtype=dtype)
@@ -113,19 +115,20 @@ end
 """
     assemblehd(N::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
 
-    Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-    left hand side `B` and basis vectors `vs`.
+Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
+left hand side `B` and basis vectors `vs`.
 
-    #Arguments:
-    - `N`: maximum monomial degree
-    - `a`: semi-axis x
-    - `b`: semi-axis y
-    - `c`: semi-axis z
-    - `Ω`: rotation vector
-    - `dtype`: datatype, default `BigFloat` for integration of monomials
-    - `kwargs`: other keyword arguments passed to lower functions
+#Arguments:
+- `N`: maximum monomial degree
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `Ω`: rotation vector
+- `dtype`: datatype, default `BigFloat` for integration of monomials
+- `kwargs`: other keyword arguments passed to lower functions
 """
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ; dtype::DataType=BigFloat, kwargs...) where T
+function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
+                    dtype::DataType=BigFloat, kwargs...) where T
     cmat = cacheint(N,a,b,c; dtype=dtype)
     vs = vel(N,a,b,c)
 

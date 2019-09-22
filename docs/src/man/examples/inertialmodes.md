@@ -17,7 +17,7 @@ The triaxial ellipsoid is defined by
 
 $$\frac{x^2}{a^2}+\frac{y^2}{b^2}+\frac{z^2}{c^2}=1.$$
 
-We simplify the problem even further by taking the rotation axis along $z$, so that $\mathbf{\Omega}=(0,0,1)$.
+We simplify the problem by taking the rotation axis along $z$, so that $\mathbf{\Omega}=(0,0,1)$.
 
 We truncate the problem at a maximum monomial $x^iy^jz^k$ degree $i+j+k\leq N = 3$.
 

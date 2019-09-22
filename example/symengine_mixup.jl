@@ -7,7 +7,7 @@ cmat=cacheint(n,a,b,c; dtype=BigFloat)
 b0 = [-y/a^2,x/b^2,0]
 Ω = [0,0,ω]
 
-LHS,RHS,vs = Mire.assemblemhd(n,cmat,a,b,c,Ω,b0)
+LHS,RHS,vs = Mire.assemblemhd(n,a,b,c,Ω,b0)
 
 
 sub(p)::Float64=subs(p,a=>1.25,b=>.8,c=>1.,ω=>1e6)
