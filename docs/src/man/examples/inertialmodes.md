@@ -6,7 +6,7 @@ The examples are also available as notebooks in the source code folder [example]
 
 We want to solve the inertial mode equation
 
-$$\omega \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}$$
+$$\partial_t \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}-\nabla p$$
 
 by expanding the velocity in a Cartesian polynomial basis and projecting onto these basis vectors following [Lebovitz (1989)](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913).
 
@@ -35,13 +35,13 @@ N = 3
 ```
 
 
-Assembling projects the left and right hand side of the inertial mode equation onto the basis vectors. For the integration a convenient formula is used (compare Lebovitz, 1989). Calling `assemblehd` outputs two sparse matrices `A` and `B` and the basis vectors `uj`. The Matrix `B` represents the left hand side and `A` the right hand side of
+Assembling projects the left and right hand side of the inertial mode equation onto the basis vectors $\mathbf{u}_j$. The pressure gradient force vanishes naturally in the projection. For the integration a convenient formula is used (compare [Lebovitz, 1989](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913)). Calling `assemblehd` outputs two sparse matrices `A` and `B` and the basis vectors `uj`. The Matrix `B` represents the left hand side and `A` the right hand side of
 
-$$\omega \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}$$
+$$\omega \int \mathbf{u}_i \cdot\mathbf{u}_j\, \mathrm{d}V = 2\int (\mathbf{\Omega}\times\mathbf{u}_i)\cdot\mathbf{u}_j\, \mathrm{d}V$$
 
 so that the eigen problem reads
 
-$$\omega B\mathbf{u}=A\mathbf{u}.$$
+$$\omega B\mathbf{x}=A\mathbf{x}.$$
 
 
 ```julia
@@ -52,7 +52,7 @@ B,A, uj = assemblehd(N, a, b, c, Ω)
 
 There are several ways to solve for eigen solutions of the generalized eigen problem. For small matrices we can simply invert Matrix $B$ to reduce the problem to a standard eigen problem
 
-$$B^{-1}A\mathbf{u}=\omega\mathbf{u}.$$
+$$B^{-1}A\mathbf{x}=\omega\mathbf{x}.$$
 
 
 In Julia, the `LAPACK` routines for dense eigen problems are included in the standard library `LinearAlgebra`. Since `A` and `B` are sparse for now we have to convert `B` to a dense array by `Matrix(B)` before calling the inverse function `inv`. This is only feasible for small `N`, since we are now dealing with dense arrays. For larger `N` and thus larger matrices iterative sparse solvers should be applied.
@@ -65,21 +65,21 @@ esol = eigen(inv(Matrix(B))*A)
 The eigen values and vectors are accessed by `esol.values` and `esol.vectors` respectively.
 
 
-The eigen vectors contain the coefficients $a_{ji}$, so that the eigen velocity $\mathbf{u}_i$ is given by
+The eigen vectors contain the coefficients $x_{ji}$, so that the eigen velocity $\mathbf{v}_i$ is given by
 
-$$\mathbf{u}_i = \sum_{j}a_{ji}\mathbf{u}_j,$$
+$$\mathbf{v}_i = \sum_{j}a_{ji}\mathbf{u}_j,$$
 
 where $\mathbf{u}_j$ is the $j$-th basis vector in `uj`.
 
-We can reconstruct the `k`-th eigenvelocity $\mathbf{u}_k$ by calling `eigenvel`:
+We can reconstruct the `k`-th eigenvelocity $\mathbf{v}_k$ by calling `eigenvel`:
 
 
 ```julia
 k=length(esol.values)-3
-u_k = eigenvel(N,uj,esol.vectors,k,a,b,c)
+v_k = eigenvel(N,uj,esol.vectors,k,a,b,c)
 ```
 
-`u_k` is now an array of cartesian polynomials with complex coefficients.
+`v_k` is now an array of cartesian polynomials with complex coefficients.
 
 ### Plotting the mode
 
@@ -87,17 +87,17 @@ u_k = eigenvel(N,uj,esol.vectors,k,a,b,c)
 ```julia
 include(joinpath(dirname(pathof(Mire)),"../example/plotting.jl"))
 
-function plotmode(a,b,c,u_k; kwargs...)
+function plotmode(a,b,c,v_k; kwargs...)
     figure()
-    plot_velocity_equator(a,b,u_k; kwargs...)
+    plot_velocity_equator(a,b,v_k; kwargs...)
     title("x-y plane")
 #     colorbar()
     figure()
-    plot_velocity_meridional_x(b,c,u_k; kwargs...)
+    plot_velocity_meridional_x(b,c,v_k; kwargs...)
     title("y-z plane")
 #     colorbar()
     figure()
-    plot_velocity_meridional_y(a,c,u_k; kwargs...)
+    plot_velocity_meridional_y(a,c,v_k; kwargs...)
     title("x-z plane")
 #     colorbar()
 end
@@ -115,7 +115,7 @@ println("ω = ",imag.(esol.values[k]),"𝕚")
 
 
 ```julia
-plotmode(a,b,c,u_k, density=1.4, cmap=:plasma)
+plotmode(a,b,c,v_k, density=1.4, cmap=:plasma)
 ```
 
 
