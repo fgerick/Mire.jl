@@ -52,7 +52,7 @@ B,A, uj = assemblehd(N, a, b, c, Ω)
 
 There are several ways to solve for eigen solutions of the generalized eigen problem. For small matrices we can simply invert Matrix $B$ to reduce the problem to a standard eigen problem
 
-$$B^{-1}A\mathbf{x}=\omega\mathbf{x}.$$
+$$B^{-1}A\mathbf{u}=\omega\mathbf{u}.$$
 
 
 In Julia, the `LAPACK` routines for dense eigen problems are included in the standard library `LinearAlgebra`. Since `A` and `B` are sparse for now we have to convert `B` to a dense array by `Matrix(B)` before calling the inverse function `inv`. This is only feasible for small `N`, since we are now dealing with dense arrays. For larger `N` and thus larger matrices iterative sparse solvers should be applied.
