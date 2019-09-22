@@ -13,13 +13,13 @@ by expanding the velocity in a Cartesian polynomial basis and projecting onto th
 
 ### Setting up the problem
 
-The semi-axes of the triaxial ellipsoid
+The triaxial ellipsoid is defined by
 
-$$\frac{x^2}{a^2}+\frac{y^2}{b^2}+\frac{z^2}{c^2}=1$$
+$$\frac{x^2}{a^2}+\frac{y^2}{b^2}+\frac{z^2}{c^2}=1.$$
 
-are set to 1 for the sphere. Additionally we simplify the problem even further by taking the rotation axis along $z$, so that $\mathbf{\Omega}=(0,0,1)$.
+We simplify the problem even further by taking the rotation axis along $z$, so that $\mathbf{\Omega}=(0,0,1)$.
 
-We truncate the problem at a maximum monomial $x^iy^jz^k$ degree $i+j+k\leq N = 7$.
+We truncate the problem at a maximum monomial $x^iy^jz^k$ degree $i+j+k\leq N = 3$.
 
 
 ```julia
