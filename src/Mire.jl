@@ -89,14 +89,14 @@ n_u(N::Int) = N1(N)+2N2(N)
 ## Force functions:
 
 #hydro:
-inertial(u::Array{P,1},a::T,b::T,c::T) where {T, P<:Polynomial{T}} = u
-coriolis(u::Array{P,1},a::T,b::T,c::T,Ω::Union{Array{S,1},Array{P,1}}) where {T, S, P<:Polynomial{T}}  = -2*Ω×u
+inertial(u::Array{P,1}) where {T, P<:Polynomial{T}} = u
+coriolis(u::Array{P,1},Ω) where {T, P<:Polynomial{T}}  = -2*Ω×u
 
 #magnetic:
-lorentz(B::Array{P,1},a::T,b::T,c::T,B0) where {T, P<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
+lorentz(B::Array{P,1},B0) where {T, P<:Polynomial{T}}  = curl(B) × B0 + curl(B0) × B
 
-inertialmag(B::Array{P,1},a::T,b::T,c::T) where {T, P<:Polynomial{T}}  = B
-advection(u::Array{P,1},a::T,b::T,c::T,B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
+inertialmag(B::Array{P,1}) where {T, P<:Polynomial{T}}  = B
+advection(u::Array{P,1},B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
 
 """
     eigenvel(N,vs,αs,a,b,c; norm=true)
