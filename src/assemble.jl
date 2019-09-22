@@ -6,16 +6,16 @@
 DOCSTRING
 
 #Arguments:
-- `A`: DESCRIPTION
-- `cmat`: DESCRIPTION
-- `vs`: DESCRIPTION
-- `N`: DESCRIPTION
-- `forcefun`: DESCRIPTION
-- `a`: DESCRIPTION
-- `b`: DESCRIPTION
-- `c`: DESCRIPTION
-- `args`: DESCRIPTION
-- `kwargs`: DESCRIPTION
+- `A`: pre-allocated array
+- `cmat`: pre-cached monomial integration values
+- `vs`: basis vectors
+- `N`: maximum monomial degree
+- `forcefun`: function of the force, e.g. coriolis
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `args`: other arguments needed for `forcefun`
+- `kwargs`: other keyword arguments
 """
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
             N::Integer, forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
@@ -47,13 +47,13 @@ projectforce(N,cmat,vs,forcefun,a,b,c, args...)
 where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 
 #Arguments:
-- `N`: DESCRIPTION
-- `vs`: DESCRIPTION
-- `forcefun`: DESCRIPTION
-- `a`: DESCRIPTION
-- `b`: DESCRIPTION
-- `c`: DESCRIPTION
-- `args`: DESCRIPTION
+- `N`: maximum monomial degree
+- `vs`: basis vectors
+- `forcefun`: function of the force, e.g. coriolis
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `args`: other arguments needed for `forcefun`
 """
 function projectforce(N::Integer,vs, forcefun::Function,a::T,b::T,c::T, args...) where T
     n_combos = n_u(N)
@@ -72,19 +72,20 @@ function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1}, force
 end
 
 """
-    assemblemhd(N::Int, cmat::Array{T, 3}, a::T, b::T, c::T, Ω, b0; kwargs...) where T
+    assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat, kwargs...) where T
 
-DOCSTRING
+Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
+left hand side `B` and basis vectors `vs`.
 
 #Arguments:
-- `N`: DESCRIPTION
-- `cmat`: DESCRIPTION
-- `a`: DESCRIPTION
-- `b`: DESCRIPTION
-- `c`: DESCRIPTION
-- `Ω`: DESCRIPTION
-- `b0`: DESCRIPTION
-- `kwargs`: DESCRIPTION
+- `N`: maximum monomial degree
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `Ω`: rotation vector
+- `b0`: mean magnetic field vector
+- `dtype`: datatype, default `BigFloat` for integration of monomials
+- `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0; dtype::DataType=BigFloat, kwargs...) where T
     n_mat = n_u(N)
@@ -106,17 +107,19 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0; dtype::DataType=BigFloat, kwar
 end
 
 """
-    assemblehd(N::Int, a::T, b::T, c::T, Ω; kwargs...) where T
+    assemblehd(N::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
 
-DOCSTRING
+    Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
+    left hand side `B` and basis vectors `vs`.
 
-#Arguments:
-- `N`: DESCRIPTION
-- `a`: DESCRIPTION
-- `b`: DESCRIPTION
-- `c`: DESCRIPTION
-- `Ω`: DESCRIPTION
-- `kwargs`: DESCRIPTION
+    #Arguments:
+    - `N`: maximum monomial degree
+    - `a`: semi-axis x
+    - `b`: semi-axis y
+    - `c`: semi-axis z
+    - `Ω`: rotation vector
+    - `dtype`: datatype, default `BigFloat` for integration of monomials
+    - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblehd(N::Int,a::T,b::T,c::T,Ω ; dtype::DataType=BigFloat, kwargs...) where T
     cmat = cacheint(N,a,b,c; dtype=dtype)

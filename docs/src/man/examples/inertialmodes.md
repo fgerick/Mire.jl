@@ -8,7 +8,7 @@ We want to solve the inertial mode equation
 
 $$\omega \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}$$
 
-by expanding the velocity in a Cartesian polynomial basis and projecting onto these basis vectors.
+by expanding the velocity in a Cartesian polynomial basis and projecting onto these basis vectors following [Lebovitz (1989)](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913).
 
 
 ### Setting up the problem
@@ -41,7 +41,7 @@ $$\omega \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}$$
 
 so that the eigen problem reads
 
-$$\omega B\mathbf{x}=A\mathbf{x}.$$
+$$\omega B\mathbf{u}=A\mathbf{u}.$$
 
 
 ```julia
