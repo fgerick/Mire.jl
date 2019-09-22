@@ -1,4 +1,7 @@
 # Examples
+
+The examples are also available as notebooks in the source code folder [example](https://github.com/fgerick/Mire.jl/tree/master/example).
+
 ## Inertial modes in a triaxial ellipsoid
 
 We want to solve the inertial mode equation
