@@ -77,7 +77,7 @@ DOCSTRING
 - `c`: DESCRIPTION
 - `dtype`: DESCRIPTION
 """
-function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=BigFloat) where T
+function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=Float64) where T
     if iseven(i) && iseven(j) && iseven(k)
         coeff=gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(8*gamma((5+i+j+k)/2))
         (dtype == BigFloat) ? a^(1+i)*b^(1+j)*c^(1+k)*coeff : a^(1+i)*b^(1+j)*c^(1+k)*convert(dtype,coeff)

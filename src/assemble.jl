@@ -86,9 +86,10 @@ DOCSTRING
 - `b0`: DESCRIPTION
 - `kwargs`: DESCRIPTION
 """
-function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) where T
+function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0; dtype::DataType=BigFloat, kwargs...) where T
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
+    cmat = cacheint(N,a,b,c; dtype=dtype)
 
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
@@ -105,23 +106,23 @@ function assemblemhd(N::Int,cmat::Array{T,3},a::T,b::T,c::T,Ω,b0; kwargs...) wh
 end
 
 """
-    assemblehd(N::Int, cmat, a::T, b::T, c::T, Ω) where T
+    assemblehd(N::Int, a::T, b::T, c::T, Ω; kwargs...) where T
 
 DOCSTRING
 
 #Arguments:
 - `N`: DESCRIPTION
-- `cmat`: DESCRIPTION
 - `a`: DESCRIPTION
 - `b`: DESCRIPTION
 - `c`: DESCRIPTION
 - `Ω`: DESCRIPTION
+- `kwargs`: DESCRIPTION
 """
-function assemblehd(N::Int,cmat,a::T,b::T,c::T,Ω) where T
-
+function assemblehd(N::Int,a::T,b::T,c::T,Ω ; dtype::DataType=BigFloat, kwargs...) where T
+    cmat = cacheint(N,a,b,c; dtype=dtype)
     vs = vel(N,a,b,c)
 
-    A = projectforce(N,cmat,vs,inertial,a,b,c)
-    B = projectforce(N,cmat,vs,coriolis,a,b,c,Ω)
+    A = projectforce(N,cmat,vs,inertial,a,b,c; kwargs...)
+    B = projectforce(N,cmat,vs,coriolis,a,b,c,Ω; kwargs...)
     return A,B, vs
 end
