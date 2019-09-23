@@ -48,7 +48,7 @@ where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 - `args`: other arguments needed for `forcefun`
 """
 function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
-    forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
     n_combos = n_u(N)
     @assert n_combos == length(vs)
     A = spzeros(T,n_combos,n_combos)

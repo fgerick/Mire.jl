@@ -9,7 +9,7 @@ export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
 
 include("assemble.jl")
 
-export  assemblehd, assemblemhd, mat_force, mat_force_galerkin!
+export  assemblehd, assemblemhd, projectforce, projectforce!
 
 include("integration.jl")
 
