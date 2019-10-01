@@ -5,11 +5,11 @@ using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, Sp
 export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
     inertial, coriolis, lorentz, advection,
-    eigen, vel, eigenvel, angularmom,r
+    eigen, vel, eigenvel,r
 
 include("assemble.jl")
 
-export  assemblehd, assemblemhd, projectforce, projectforce!
+export  assemblehd, assemblemhd, assemblemhd_hybrid, projectforce, projectforce!
 
 include("integration.jl")
 
@@ -99,17 +99,31 @@ inertialmag(B::Array{P,1}) where {T, P<:Polynomial{T}}  = B
 advection(u::Array{P,1},B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
 
 """
-    eigenvel(N,vs,αs,a,b,c; norm=true)
+    eigenvel(vs,αs,a,b,c)
 Reconstructs velocity u, following Vidal & Cebron 2017 eq. (3.5).
-
-If `norm` keyword is set `true` the velocity is normalised to satisfy \$\\int u\\cdot u dV=1\$.
 """
-function eigenvel(N::Integer,vs,αs,a::T,b::T,c::T; norm =false) where T<: Real
-    vo= sum([αs[i]*vs[i] for i=1:length(vs)])
-    return norm ? vo/√complex(inner_product(vo,vo,a,b,c)) : vo
+function eigenvel(vs,αs,a::T,b::T,c::T) where T<: Real
+    sum([αs[i]*vs[i] for i=1:length(vs)])
 end
 
-eigenvel(N::Integer,vs,αs,n_ev::Integer,a::T,b::T,c::T; norm =false) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c,norm=norm)
+eigenvel(vs,αs,n_ev::Integer,a::T,b::T,c::T) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c)
+
+
+#QG tools
+qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<=N)]
+
+
+function qg_vel(n::Integer,m::Integer,a::T,b::T,c::T) where T
+    h2 = c^2*(1-x^2/a^2-y^2/b^2)
+    ez = [0,0,1]
+    hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
+    return h2*∇(x^n*y^m)×ez+3*x^n*y^m*hgradh×ez-z*∇(x^n*y^m)×hgradh
+end
+
+function qg_vel(N::Int,a::T,b::T,c::T) where T
+    cs=qg_combos(N)
+    return [qg_vel(ci...,a,b,c) for ci in cs]
+end
 
 
 end #module
