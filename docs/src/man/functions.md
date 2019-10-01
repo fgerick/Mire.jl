@@ -17,6 +17,11 @@ assemblemhd
 
 ```
 
+```@docs
+assemblemhd_hybrid
+
+```
+
 ## Low level functions
 
 Functions for low level control of the problem.
@@ -51,4 +56,7 @@ int_polynomial_ellipsoid
 
 ```@docs
 inner_product
+```
+```@docs
+qg_vel
 ```
