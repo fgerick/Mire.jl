@@ -115,7 +115,7 @@ qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<=N)]
 """
     qg_vel(n::Integer,m::Integer,a::T,b::T,c::T) where T
 
-Generate basis vector \$\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$
+Generate basis vector \$\\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$
 """
 function qg_vel(n::Integer,m::Integer,a::T,b::T,c::T) where T
     h2 = c^2*(1-x^2/a^2-y^2/b^2)
