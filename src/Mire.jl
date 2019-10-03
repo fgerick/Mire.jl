@@ -99,14 +99,14 @@ inertialmag(B::Array{P,1}) where {T, P<:Polynomial{T}}  = B
 advection(u::Array{P,1},B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
 
 """
-    eigenvel(vs,αs,a,b,c)
-Reconstructs velocity u, following Vidal & Cebron 2017 eq. (3.5).
+    eigenvel(v,α)
+Reconstructs velocity u=∑αᵢvᵢ
 """
-function eigenvel(vs,αs,a::T,b::T,c::T) where T<: Real
-    sum([αs[i]*vs[i] for i=1:length(vs)])
+function eigenvel(v,α)
+    sum([α[i]*v[i] for i=1:length(v)])
 end
 
-eigenvel(vs,αs,n_ev::Integer,a::T,b::T,c::T) where T<: Real = eigenvel(N,vs,αs[:,n_ev],a,b,c)
+eigenvel(vs,αs,n_ev::Integer) = eigenvel(N,vs,αs[:,n_ev])
 
 
 #QG tools
