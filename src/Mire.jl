@@ -103,6 +103,7 @@ advection(u::Array{P,1},B0) where {T, P<:Polynomial{T}}  = curl(u × B0)
 Reconstructs velocity u=∑αᵢvᵢ
 """
 function eigenvel(v,α)
+    @assert length(v)==length(α) "Coefficients should have the same length as basis vectors"
     sum([α[i]*v[i] for i=1:length(v)])
 end
 
