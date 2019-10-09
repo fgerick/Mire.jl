@@ -1,28 +1,6 @@
 ### Functions to define integrals of monomials over ellipsoidal volume and surface
 
 
-"""
-Integral over the surface of an ellipsoid.
-"""
-function int_ellipsoid_surface(p::Monomial,a::Real,b::Real,c::Real)
-    i = big(exponent(p,x))
-    j = big(exponent(p,y))
-    k = big(exponent(p,z))
-    if iseven(i) && iseven(j) && iseven(k)
-
-        f1 = factorial(i)*factorial(j)*factorial(k)
-        f2 = factorial(i÷2)*factorial(j÷2)*factorial(k÷2)
-        f3 = factorial(2+i+j+k)
-        f4= factorial(1+(i+j+k)÷2)
-        ft = f1/f2/f3*f4
-        return √big(π)*a^(i+1)*b^(j+1)*c^(k+1)*ft
-    else
-        zero(BigFloat)
-    end
-end
-
-int_polynomial_ellipsoid_surface(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_ellipsoid_surface.(monomial.(terms(p)),a,b,c))
-
 function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     i = big(exponent(p,x))
     j = big(exponent(p,y))
@@ -32,14 +10,6 @@ function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
     # k = exponent(p,z)
     return int_monomial_ellipsoid(i,j,k,a,b,c)
 end
-#
-# """
-#     int_monomial_ellipsoid(i,j,k,a,b,c)
-#
-# Integrate monomial `xⁱyʲzᵏ` over ellipsoid of semi-axes `a,b,c`.
-# """
-
-
 
 # function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=Float64) where T
 #     if iseven(i) && iseven(j) && iseven(k)
@@ -64,24 +34,21 @@ DOCSTRING
 - `c`: DESCRIPTION
 - `dtype`: DESCRIPTION
 """
-function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=Float64) where T
+function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T; dtype::DataType=Float64) where T
     if iseven(i) && iseven(j) && iseven(k)
-        γ₁ = i÷2
-        γ₂ = j÷2
-        γ₃ = k÷2
-        γ = γ₁ + γ₂ + γ₃
-
-        f1 = factorial(big(γ₁+γ₂+γ₃+1))
-        f2 = factorial(2γ₁)*factorial(2γ₂)*factorial(2γ₃)
-        f3 = factorial(2γ₁+2γ₂+2γ₃+3)
-        f4 = factorial(γ₁)*factorial(γ₂)*factorial(γ₃)
-
-        fact = f1*f2//f3//f4
-        return convert(T,a^(2*γ₁+1)*b^(2*γ₂+1)*c^(2γ₃+1)*fact)
+        I = i÷2
+        J = j÷2
+        K = k÷2
+        D = (4+i+j+k)÷2
+        coeff = gammanp1half(I)*gammanp1half(J)*gammanp1half(K)//(8*gammanp1half(D))
+        return convert(T,(1 + (-1)^i)*(1 + (-1)^j)*(a^(1 + i))*(b^(1 + j))*c*((-c)^k + c^k) *coeff)
     else
-        zero(T)
+        return zero(T)
     end
 end
+
+#Γ(1/2+n)/√π
+gammanp1half(n::Integer) = factorial(2n)//(4^n*factorial(n))
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
