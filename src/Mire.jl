@@ -1,6 +1,6 @@
 module Mire
 
-using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
+using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions, HCubature
 
 export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
@@ -13,7 +13,7 @@ export  assemblehd, assemblemhd, assemblemhd_hybrid, projectforce, projectforce!
 
 include("integration.jl")
 
-export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
+export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint, cacheint_surface_torque
 
 
 # include miscellaneous function for analysis
