@@ -62,7 +62,7 @@ function int_polynomial_ellipsoid(p,cmat)
     ip = zero(eltype(cmat))
     cs = coefficients(p)
     exps = exponents.(monomial.(terms(p)))
-    @inbounds @simd for i=1:length(cs)
+    @simd for i=1:length(cs)
         ip+=cs[i]*cmat[(exps[i] .+ 1)...]
     end
     return ip
@@ -100,13 +100,13 @@ function int_surface_ellipsoid_torque(coordinate::Integer,i::Integer,j::Integer,
             end
         elseif coordinate==2
             if isodd(i) && isodd(i+j) && isodd(k)
-                return 8*a^i*b^(1+j)*(c^2 - a^2)*c^k*r^(3 + i + j + k)*gamma(1+i/2)*gamma((1+j)/2)*gamma(1+k/2)/(4*gamma((5+i+j+k)/2))
+                return 8*a^i*b^(1+j)*(a^2 - c^2)*c^k*r^(3 + i + j + k)*gamma(1+i/2)*gamma((1+j)/2)*gamma(1+k/2)/(4*gamma((5+i+j+k)/2))
             else
                 return zero(T)
             end
         elseif coordinate==3
             if isodd(i) && isodd(j) && iseven(k)
-                return 8*a^i*b^j*(a^2 - b^2)*c^(1 + k)*r^(3 + i + j + k)*gamma(1+i/2)*gamma(1+j/2)*gamma((1+k)/2)/(4*gamma((5+i+j+k)/2))
+                return 8*a^i*b^j*(b^2 - a^2)*c^(1 + k)*r^(3 + i + j + k)*gamma(1+i/2)*gamma(1+j/2)*gamma((1+k)/2)/(4*gamma((5+i+j+k)/2))
             else
                 return zero(T)
             end
