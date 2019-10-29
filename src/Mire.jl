@@ -23,7 +23,7 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 # Cartesian coordinates as polynomial variables
 
-@polyvar x y z
+@polyvar x y z s H
 
 # Monomials
 Π(n::Int,m::Int,l::Int) = x^n*y^m*z^l
