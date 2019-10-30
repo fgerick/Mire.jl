@@ -2,7 +2,7 @@ module Mire
 
 using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions, HCubature
 
-export x,y,z,Π, ∇, Δ, div, curl, F, ex,ey,ez,
+export x,y,z,s,H,Π, ∇, Δ, div, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
     inertial, coriolis, lorentz, advection,
     eigen, vel, eigenvel,r
