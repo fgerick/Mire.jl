@@ -2,7 +2,7 @@ module Mire
 
 using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions, HCubature
 
-export x,y,z,s,H,Π, ∇, Δ, div, curl, F, ex,ey,ez,
+export x,y,z,s,H,Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
     inertial, coriolis, lorentz, advection,
     eigen, vel, eigenvel,r
@@ -33,7 +33,7 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 ∂ = differentiate
 ∇(ψ) = [∂.(ψ,(x,y,z))...]
 Δ(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
-div(u) = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
+divergence(u) = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
 curl(u) = [∂(u[3],y)-∂(u[2],z),∂(u[1],z)-∂(u[3],x),∂(u[2],x)-∂(u[1],y)]
 advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1:3]
 # Lebovitz 1989, eq. (39b)
