@@ -165,11 +165,44 @@ function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
     nmat=n_mat+n_mat_qg
     A = spzeros(T,nmat,nmat)
     B = spzeros(T,nmat,nmat)
-    projectforce!(view(A,1:n_mat_qg,1:n_mat_qg),cmat,vs_qg,vs_qg, Mire.inertial; kwargs...)
-    projectforce!(view(A,n_mat_qg+1:nmat,n_mat_qg+1:nmat),cmat,vs,vs, Mire.inertialmag; kwargs...)
-    projectforce!(view(B,1:n_mat_qg,1:n_mat_qg),cmat,vs_qg,vs_qg,Mire.coriolis,Ω; kwargs...)
-    projectforce!(view(B,1:n_mat_qg,n_mat_qg+1:nmat),cmat,vs_qg,vs,Mire.lorentz,b0; kwargs...)
-    projectforce!(view(B,n_mat_qg+1:nmat,1:n_mat_qg),cmat,vs,vs_qg,Mire.advection,b0; kwargs...)
+    projectforce!(view(A,1:n_mat_qg,1:n_mat_qg),            cmat, vs_qg, vs_qg, Mire.inertial; kwargs...)
+    projectforce!(view(A,n_mat_qg+1:nmat,n_mat_qg+1:nmat),  cmat, vs, vs, Mire.inertialmag; kwargs...)
+    projectforce!(view(B,1:n_mat_qg,1:n_mat_qg),            cmat, vs_qg, vs_qg, Mire.coriolis,Ω; kwargs...)
+    projectforce!(view(B,1:n_mat_qg,n_mat_qg+1:nmat),       cmat, vs_qg, vs, Mire.lorentz,b0; kwargs...)
+    projectforce!(view(B,n_mat_qg+1:nmat,1:n_mat_qg),       cmat, vs,vs_qg, Mire.advection,b0; kwargs...)
 
     return A,B, vs, vs_qg
+end
+
+"""
+    assemblehd_qg(N2D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
+
+Assemble the sparse matrices of the QG MHD mode problem.
+Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
+
+#Arguments:
+- `N2D`: maximum monomial degree of QG velocity/magnetic field
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `Ω`: rotation vector
+- `dtype`: datatype, default `BigFloat` for integration of monomials
+- `kwargs`: other keyword arguments passed to lower functions
+"""
+function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
+                     dtype::DataType = BigFloat, kwargs...) where T
+    vs_qg = Mire.qg_vel(N2D, a, b, c)
+    n_mat_qg = length(vs_qg)
+
+    cmat = cacheint(N2D, a, b, c; dtype = dtype)
+    nmat = 2n_mat_qg
+    A = spzeros(T, nmat, nmat)
+    B = spzeros(T, nmat, nmat)
+    projectforce!(view(A, 1:n_mat_qg, 1:n_mat_qg),           cmat, vs_qg, vs_qg, Mire.inertial; kwargs...)
+    projectforce!(view(A, n_mat_qg+1:nmat, n_mat_qg+1:nmat), cmat, vs_qg, vs_qg, Mire.inertialmag; kwargs...)
+    projectforce!(view(B, 1:n_mat_qg, 1:n_mat_qg),           cmat, vs_qg, vs_qg, Mire.coriolis, Ω; kwargs...)
+    projectforce!(view(B, 1:n_mat_qg, n_mat_qg+1:nmat),      cmat, vs_qg, vs_qg, Mire.lorentz, b0; kwargs...)
+    projectforce!(view(B, n_mat_qg+1:nmat, 1:n_mat_qg),      cmat, vs_qg, vs_qg, Mire.advection, b0; kwargs...)
+
+    return A, B, vs_qg
 end

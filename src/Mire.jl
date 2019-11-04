@@ -9,7 +9,7 @@ export x,y,z,s,H,Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
 
 include("assemble.jl")
 
-export  assemblehd, assemblemhd, assemblemhd_hybrid, projectforce, projectforce!
+export  assemblehd, assemblemhd, assemblemhd_hybrid, assemblemhd_qg, projectforce, projectforce!
 
 include("integration.jl")
 

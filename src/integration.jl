@@ -150,7 +150,7 @@ function inner_product(cmat,u,v; thresh=eps())
         v=truncpolyvec(v,thresh)
     end
 
-    duv = dotp(u,v)
+    duv = dot(u,v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
 
