@@ -98,6 +98,9 @@ lorentz(B,B0)  = curl(B) × B0 + curl(B0) × B
 inertialmag(B)  = B
 advection(u,B0)  = curl(u × B0)
 
+#invalid diffusion:
+diffusion(B,B0,η) = η*Δ.(B)
+
 """
     eigenvel(v,α)
 Reconstructs velocity u=∑αᵢvᵢ
@@ -130,5 +133,14 @@ function qg_vel(N::Int,a::T,b::T,c::T) where T
     return [qg_vel(ci...,a,b,c) for ci in cs]
 end
 
+function geo_veln(n::Integer,a::T,b::T,c::T) where T
+    h2 = c^2*(1-x^2/a^2-y^2/b^2)
+    ez = [0,0,1]
+    hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
+    return (3+2n)/3*h2^n*z^0 * hgradh×ez
+end
 
+function geo_vel(N::Int,a::T,b::T,c::T) where T
+    return [geo_veln(n,a,b,c) for n in 0:N]
+end
 end #module

@@ -80,6 +80,32 @@ function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Arr
     return A
 end
 
+
+"""
+    assemblehd(N::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
+
+Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
+left hand side `B` and basis vectors `vs`.
+
+#Arguments:
+- `N`: maximum monomial degree
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `Ω`: rotation vector
+- `dtype`: datatype, default `BigFloat` for integration of monomials
+- `kwargs`: other keyword arguments passed to lower functions
+"""
+function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
+                    dtype::DataType=BigFloat, kwargs...) where T
+    cmat = cacheint(N,a,b,c; dtype=dtype)
+    vs = vel(N,a,b,c)
+
+    A = projectforce(N,cmat,vs,inertial; kwargs...)
+    B = projectforce(N,cmat,vs,coriolis,Ω; kwargs...)
+    return A,B, vs
+end
+
 """
     assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat, kwargs...) where T
 
@@ -113,30 +139,6 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
     return A,B, vs
 end
 
-"""
-    assemblehd(N::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
-
-Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-left hand side `B` and basis vectors `vs`.
-
-#Arguments:
-- `N`: maximum monomial degree
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
-- `kwargs`: other keyword arguments passed to lower functions
-"""
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
-                    dtype::DataType=BigFloat, kwargs...) where T
-    cmat = cacheint(N,a,b,c; dtype=dtype)
-    vs = vel(N,a,b,c)
-
-    A = projectforce(N,cmat,vs,inertial; kwargs...)
-    B = projectforce(N,cmat,vs,coriolis,Ω; kwargs...)
-    return A,B, vs
-end
 
 """
     assemblehd_hybrid(N2D::Int, N3D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
@@ -205,4 +207,39 @@ function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
     projectforce!(view(B, n_mat_qg+1:nmat, 1:n_mat_qg),      cmat, vs_qg, vs_qg, Mire.advection, b0; kwargs...)
 
     return A, B, vs_qg
+end
+
+"""
+    assemblemhd_diffusion(N::Int, a::T, b::T, c::T, Ω, b0, η; dtype::DataType=BigFloat, kwargs...) where T
+
+Assemble the sparse matrices of the MHD mode problem with diffusion.
+Returns right hand side `A`, left hand side `B` and basis vectors `vs`.
+
+#Arguments:
+- `N`: maximum monomial degree
+- `a`: semi-axis x
+- `b`: semi-axis y
+- `c`: semi-axis z
+- `Ω`: rotation vector
+- `b0`: mean magnetic field vector
+- `η`: magnetic diffusivity
+- `dtype`: datatype, default `BigFloat` for integration of monomials
+- `kwargs`: other keyword arguments passed to lower functions
+"""
+function assemblemhd_diffusion(N::Int,a::T,b::T,c::T,Ω,b0,η;
+                     dtype::DataType=BigFloat, kwargs...) where T
+    n_mat = n_u(N)
+    vs = vel(N,a,b,c)
+    cmat = cacheint(N,a,b,c; dtype=dtype)
+
+    A = spzeros(T,2n_mat,2n_mat)
+    B = spzeros(T,2n_mat,2n_mat)
+    projectforce!(view(A,1:n_mat,1:n_mat),cmat,vs,N, inertial; kwargs...)
+    projectforce!(view(A,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N, inertialmag; kwargs...)
+    projectforce!(view(B,1:n_mat,1:n_mat),cmat,vs,N,coriolis,Ω; kwargs...)
+    projectforce!(view(B,1:n_mat,n_mat+1:2n_mat),cmat,vs,N,lorentz,b0; kwargs...)
+    projectforce!(view(B,n_mat+1:2n_mat,1:n_mat),cmat,vs,N,advection,b0; kwargs...)
+    projectforce!(view(B,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N,diffusion,b0,η; kwargs...)
+
+    return A,B, vs
 end
