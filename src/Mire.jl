@@ -137,7 +137,7 @@ function geo_veln(n::Integer,a::T,b::T,c::T) where T
     h2 = c^2*(1-x^2/a^2-y^2/b^2)
     ez = [0,0,1]
     hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
-    return (3+2n)/3*h2^n*z^0 * hgradh×ez
+    return (3+2n)//3*h2^n*z^0 * hgradh×ez
 end
 
 function geo_vel(N::Int,a::T,b::T,c::T) where T

@@ -123,10 +123,10 @@ left hand side `B` and basis vectors `vs`.
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
-                     dtype::DataType=BigFloat, kwargs...) where T
+                     dtype::DataType=BigFloat,
+                     cmat = cacheint(N,a,b,c; dtype=dtype), kwargs...) where T
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
-    cmat = cacheint(N,a,b,c; dtype=dtype)
 
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
@@ -157,13 +157,14 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs` and `vs_qg
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
-                     dtype::DataType=BigFloat, kwargs...) where T
+                     dtype::DataType=BigFloat,
+                     cmat = cacheint(N3D,a,b,c; dtype=dtype), kwargs...) where T
     n_mat = Mire.n_u(N3D)
     vs = Mire.vel(N3D,a,b,c)
     vs_qg = Mire.qg_vel(N2D,a,b,c)
     n_mat_qg = length(vs_qg)
 
-    cmat = cacheint(N3D,a,b,c; dtype=dtype)
+
     nmat=n_mat+n_mat_qg
     A = spzeros(T,nmat,nmat)
     B = spzeros(T,nmat,nmat)
@@ -192,11 +193,11 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
-                     dtype::DataType = BigFloat, kwargs...) where T
+                     dtype::DataType = BigFloat,
+                     cmat = cacheint(N2D,a,b,c; dtype=dtype), kwargs...) where T
     vs_qg = Mire.qg_vel(N2D, a, b, c)
     n_mat_qg = length(vs_qg)
 
-    cmat = cacheint(N2D, a, b, c; dtype = dtype)
     nmat = 2n_mat_qg
     A = spzeros(T, nmat, nmat)
     B = spzeros(T, nmat, nmat)
@@ -212,7 +213,7 @@ end
 """
     assemblemhd_diffusion(N::Int, a::T, b::T, c::T, Ω, b0, η; dtype::DataType=BigFloat, kwargs...) where T
 
-Assemble the sparse matrices of the MHD mode problem with diffusion.
+Assemble the sparse matrices of the MHD mode problem with diffusion. Incorrect model!!!
 Returns right hand side `A`, left hand side `B` and basis vectors `vs`.
 
 #Arguments:

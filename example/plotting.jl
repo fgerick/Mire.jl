@@ -14,7 +14,7 @@ function plot_velocity_equator(a,b,v1; ngrid=50, kwargs...)
     u = .√(ux.^2+uy.^2)
     phi = atan.(Y/b,X/a);
 
-    outsideellipse=(X.^2/a^2+Y.^2/b^2).>=1.0
+    outsideellipse=(X.^2/a^2+Y.^2/b^2).>0.99
     ux[outsideellipse].=0.
     uy[outsideellipse].=0.
     u[outsideellipse].=0.
