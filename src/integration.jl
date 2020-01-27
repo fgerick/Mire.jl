@@ -1,24 +1,12 @@
 ### Functions to define integrals of monomials over ellipsoidal volume and surface
 
 
-function int_monomial_ellipsoid(p::Monomial,a::Real,b::Real,c::Real)
+function int_monomial_ellipsoid(p::Monomial,a::T,b::T,c::T) where T
     i = big(exponent(p,x))
     j = big(exponent(p,y))
     k = big(exponent(p,z))
-    # i = exponent(p,x)
-    # j = exponent(p,y)
-    # k = exponent(p,z)
     return int_monomial_ellipsoid(i,j,k,a,b,c)
 end
-
-# function int_monomial_ellipsoid(i::BigInt,j::BigInt,k::BigInt,a::T,b::T,c::T; dtype::DataType=Float64) where T
-#     if iseven(i) && iseven(j) && iseven(k)
-#         coeff=gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(8*gamma((5+i+j+k)/2))
-#         (dtype == BigFloat) ? a^(1+i)*b^(1+j)*c^(1+k)*coeff : a^(1+i)*b^(1+j)*c^(1+k)*convert(dtype,coeff)
-#     else
-#         zero(dtype)
-#     end
-# end
 
 """
     int_monomial_ellipsoid(i::BigInt, j::BigInt, k::BigInt, a::T, b::T, c::T; dtype::DataType=BigFloat) where T
@@ -34,7 +22,7 @@ DOCSTRING
 - `c`: DESCRIPTION
 - `dtype`: DESCRIPTION
 """
-function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T; dtype::DataType=Float64) where T
+function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T) where T
     if iseven(i) && iseven(j) && iseven(k)
         I = i÷2
         J = j÷2
@@ -69,26 +57,6 @@ function int_polynomial_ellipsoid(p,cmat)
 end
 
 
-
-###numerically integrate monomials over ellipsoidal surface
-
-function integrand(r,ϕ,θ,i::Integer,j::Integer,k::Integer,a::T,b::T,c::T) where T
-    x=a*r*cos(ϕ)*sin(θ)
-    y=b*r*sin(ϕ)*sin(θ)
-    z=c*r*cos(θ)
-    D = r^2*sin(θ)*sqrt(a^2*b^2*cos(θ)^2+c^2*sin(θ)^2*(a^2*sin(ϕ)^2+b^2*cos(ϕ)^2))
-    return x^i*y^j*z^k*D
-end
-
-function int_monomial_ellipsoid_surface(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T; kwargs...) where T
-    if iseven(i) && iseven(j) && iseven(k)
-        f=x->integrand(1,x[1],x[2],i,j,k,a,b,c)
-        return hcubature(f,[0,0],[2pi,pi]; kwargs...)
-    else
-        return zero(T)
-    end
-end
-
 # ∫xⁱyʲzᵏ(n×r)dS:
 
 function int_surface_ellipsoid_torque(coordinate::Integer,i::Integer,j::Integer,k::Integer,a::T,b::T,c::T,r::T=one(T)) where T
@@ -120,11 +88,6 @@ function cacheint_surface_torque(N::Integer,coordinate::Integer,a::T,b::T,c::T,r
 end
 
 cacheint_surface_torque(N::Integer,a::T,b::T,c::T,r::T = one(T)) where T = [cacheint_surface_torque(N,i,a,b,c,r) for i=1:3]
-
-#alternative dot product
-function dotp(u,v)
-    return u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
-end
 
 """
     inner_product(u,v,a,b,c)
@@ -158,93 +121,11 @@ end
 """
 Function to precalculate monomial integrations.
 """
-function cacheint(n::Int,a::T,b::T,c::T; kwargs...) where T
+function cacheint(n::Int,a::T,b::T,c::T) where T
     Nmax=4n
     cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c; kwargs...)
-    end
-    return cachedmat
-end
-
-
-function cacheint_surface(n::Int,a::T,b::T,c::T; kwargs...) where T
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_surface(big(i),big(j),big(k),a,b,c; kwargs...)[1]
-    end
-    return cachedmat
-end
-
-#truncate polynomial
-
-function truncpoly(p,thresh=eps())
-    c = coefficients(p)
-    m = monomials(p)
-    t = abs.(c) .> thresh
-    return sum(c[t].*m[t])
-end
-
-truncpolyvec(v,thresh=eps()) = [truncpoly(vi,thresh) for vi in v]
-
-
-
-# function to integrate ∫x^iy^jz^k/(x^2/a^4+y^2/b^4)^2 dV
-function int_monomial_ellipsoid_projected_ephi(i::BigInt,j::BigInt,k::BigInt,a::Real,b::Real,c::Real)
-    if iseven(i) && iseven(j) && iseven(k) && ((i+j+k)>1)
-        # a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/(4*(i+j)*gamma((3+i+j+k)/2))
-        a^(1+i)*b^(1+j)*c^(1+k) *gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/((i+j-2)*(i+j)*(i+j+k-1)*gamma((i+j+k-1)/2))
-    else
-        zero(BigFloat)
-    end
-end
-
-function cacheint_projected_ephi(n::Int,a::T,b::T,c::T) where T
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid_projected_ephi(big(i),big(j),big(k),a,b,c)
-    end
-    return cachedmat
-end
-
-
-#integrations for geostrophic velocity
-
-function integrate_sxyzpoly(l,i,j,k,a,b,c)
-    if iseven(k) && iseven(j) && iseven(i)
-        return ((1 + (-1)^k)*a^(1 + i)*b^(1 + j)*c^(1 + k)*exp((im*i*π)/2)*(1 + exp(im*j*π))*π*
-            gamma((1 + j)/2)*gamma((1 + k)/2)*gamma((2 + i + j + l)/2))/(4gamma((1-i)/2)*gamma((2 + i + j)/2)*gamma((5 + i + j + k + l)/2))
-    else
-        return zero(typeof(a))
-    end
-end
-
-function cacheint_sxyzpoly(n::Int,a::T,b::T,c::T) where T
-    Nmax=4n
-    cachedmat=zeros(Complex{T},Nmax+1,Nmax+1,Nmax+1,Nmax+1)
-    for l=0:Nmax,i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[l+1,i+1,j+1,k+1] = integrate_sxyzpoly(big(l),big(i),big(j),big(k),a,b,c)
-    end
-    return cachedmat
-end
-
-
-function integrate_Hsxyzpoly(m,l,i,j,k,a,b,c)
-    if iseven(k) && iseven(j) && iseven(i)
-        return ((1 + (-1)^k)*a^(1 + i)*b^(1 + j)*c^(1 + k)*exp((im*i*π)/2)*(1 + exp(im*j*π))*π*
-            gamma((1 + j)/2)*gamma((2 + i + j + l)/2))*gamma((3 + k + m)/2)/(2*(1+k)*gamma((1-i)/2)*gamma((2 + i + j)/2)*gamma((5 + i + j + k + l + m)/2))
-    else
-        return zero(typeof(a))
-    end
-end
-
-function cacheint_Hsxyzpoly(n::Int,a::T,b::T,c::T) where T
-    Nmax=3n
-    cachedmat=zeros(Complex{T},Nmax+1,Nmax+1,Nmax+1,Nmax+1,Nmax+1)
-    @inbounds for m=0:Nmax,l=0:Nmax,i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[m+1,l+1,i+1,j+1,k+1] = integrate_Hsxyzpoly(big(m),big(l),big(i),big(j),big(k),a,b,c)
+    @inbounds for i=0:Nmax,j=0:Nmax,k=0:Nmax
+        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
     end
     return cachedmat
 end
