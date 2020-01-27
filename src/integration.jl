@@ -1,6 +1,5 @@
 ### Functions to define integrals of monomials over ellipsoidal volume and surface
 
-
 function int_monomial_ellipsoid(p::Monomial,a::T,b::T,c::T) where T
     i = big(exponent(p,x))
     j = big(exponent(p,y))
@@ -11,16 +10,15 @@ end
 """
     int_monomial_ellipsoid(i::BigInt, j::BigInt, k::BigInt, a::T, b::T, c::T; dtype::DataType=BigFloat) where T
 
-DOCSTRING
+Integrate a monomial over the ellipsoids volume \$\\int x^iy^jz^k dV\$.
 
 #Arguments:
-- `i`: DESCRIPTION
-- `j`: DESCRIPTION
-- `k`: DESCRIPTION
-- `a`: DESCRIPTION
-- `b`: DESCRIPTION
-- `c`: DESCRIPTION
-- `dtype`: DESCRIPTION
+- `i`: Exponent of `x`
+- `j`: Exponent of `y`
+- `k`: Exponent of `z`
+- `a`: Semi-axis in `x`
+- `b`: Semi-axis in `y`
+- `c`: Semi-axis in `z`
 """
 function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T) where T
     if iseven(i) && iseven(j) && iseven(k)
@@ -57,6 +55,49 @@ function int_polynomial_ellipsoid(p,cmat)
 end
 
 
+"""
+    inner_product(u,v,a,b,c)
+
+Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
+"""
+inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
+
+"""
+    inner_product(cmat, u, v; thresh=eps())
+
+DOCSTRING
+
+#Arguments:
+- `cmat`: DESCRIPTION
+- `u`: DESCRIPTION
+- `v`: DESCRIPTION
+- `thresh`: DESCRIPTION
+"""
+function inner_product(cmat, u, v; thresh=eps())
+    if thresh != eps()
+        u = truncpolyvec(u,thresh)
+        v = truncpolyvec(v,thresh)
+    end
+
+    duv = dot(u,v)
+    return int_polynomial_ellipsoid(duv,cmat)
+end
+
+
+"""
+Function to precalculate monomial integrations.
+"""
+function cacheint(n::Int, a::T, b::T, c::T) where T
+    Nmax = 4n
+    cachedmat = zeros(T,Nmax+1,Nmax+1,Nmax+1)
+    @inbounds for i = 0:Nmax,j = 0:Nmax, k = 0:Nmax
+        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i), big(j), big(k), a, b, c)
+    end
+    return cachedmat
+end
+
+
+
 # ∫xⁱyʲzᵏ(n×r)dS:
 
 function int_surface_ellipsoid_torque(coordinate::Integer,i::Integer,j::Integer,k::Integer,a::T,b::T,c::T,r::T=one(T)) where T
@@ -88,44 +129,3 @@ function cacheint_surface_torque(N::Integer,coordinate::Integer,a::T,b::T,c::T,r
 end
 
 cacheint_surface_torque(N::Integer,a::T,b::T,c::T,r::T = one(T)) where T = [cacheint_surface_torque(N,i,a,b,c,r) for i=1:3]
-
-"""
-    inner_product(u,v,a,b,c)
-
-Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
-"""
-inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
-
-"""
-    inner_product(cmat, u, v; thresh=eps())
-
-DOCSTRING
-
-#Arguments:
-- `cmat`: DESCRIPTION
-- `u`: DESCRIPTION
-- `v`: DESCRIPTION
-- `thresh`: DESCRIPTION
-"""
-function inner_product(cmat,u,v; thresh=eps())
-    if thresh != eps()
-        u=truncpolyvec(u,thresh)
-        v=truncpolyvec(v,thresh)
-    end
-
-    duv = dot(u,v)
-    return int_polynomial_ellipsoid(duv,cmat)
-end
-
-
-"""
-Function to precalculate monomial integrations.
-"""
-function cacheint(n::Int,a::T,b::T,c::T) where T
-    Nmax=4n
-    cachedmat=zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    @inbounds for i=0:Nmax,j=0:Nmax,k=0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
-    end
-    return cachedmat
-end

@@ -15,12 +15,6 @@ include("integration.jl")
 
 export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint, cacheint_surface_torque
 
-
-# include miscellaneous function for analysis
-# include("misc/analysis.jl")
-# include("misc/tracking.jl")
-#don't export them -> need Mire. prefix
-
 # Cartesian coordinates as polynomial variables
 
 @polyvar x y z s H
@@ -40,9 +34,9 @@ advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1
 F(a,b,c) = (1-x^2/a^2-y^2/b^2-z^2/c^2)
 
 # Cartesian unit vectors
-const ex=[1,0,0]
-const ey=[0,1,0]
-const ez=[0,0,1]
+const ex = [1,0,0]
+const ey = [0,1,0]
+const ez = [0,0,1]
 
 const r = [x, y, z]
 
@@ -112,7 +106,6 @@ end
 
 eigenvel(vs,αs,n_ev::Integer) = eigenvel(N,vs,αs[:,n_ev])
 
-
 #QG tools
 qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<=N)]
 
@@ -143,4 +136,6 @@ end
 function geo_vel(N::Int,a::T,b::T,c::T) where T
     return [geo_veln(n,a,b,c) for n in 0:N]
 end
+
+
 end #module
