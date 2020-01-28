@@ -16,7 +16,7 @@ DOCSTRING
 """
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
             N::Integer, forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
-    projectforce!(A, cmat, vs, vs, N, forcefun, args...; kwargs...)
+    projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
 end
 
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
