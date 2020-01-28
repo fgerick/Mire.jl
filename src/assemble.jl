@@ -86,9 +86,8 @@ left hand side `B` and basis vectors `vs`.
 - `dtype`: datatype, default `BigFloat` for integration of monomials
 - `kwargs`: other keyword arguments passed to lower functions
 """
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
-                    dtype::DataType=BigFloat, kwargs...) where T
-    cmat = cacheint(N,a,b,c; dtype=dtype)
+function assemblehd(N::Int,a::T,b::T,c::T,Ω ; kwargs...) where T
+    cmat = cacheint(N,a,b,c)
     vs = vel(N,a,b,c)
 
     A = projectforce(N,cmat,vs,inertial; kwargs...)
@@ -113,8 +112,7 @@ left hand side `B` and basis vectors `vs`.
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
-                     dtype::DataType=BigFloat,
-                     cmat = cacheint(N,a,b,c; dtype=dtype), kwargs...) where T
+                     cmat = cacheint(N,a,b,c), kwargs...) where T
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
 
@@ -147,8 +145,7 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs` and `vs_qg
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
-                     dtype::DataType=BigFloat,
-                     cmat = cacheint(N3D,a,b,c; dtype=dtype), kwargs...) where T
+                     cmat = cacheint(N3D,a,b,c), kwargs...) where T
     n_mat = Mire.n_u(N3D)
     vs = Mire.vel(N3D,a,b,c)
     vs_qg = Mire.qg_vel(N2D,a,b,c)
@@ -183,8 +180,7 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
 - `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
-                     dtype::DataType = BigFloat,
-                     cmat = cacheint(N2D,a,b,c; dtype=dtype), kwargs...) where T
+                     cmat = cacheint(N2D,a,b,c), kwargs...) where T
     vs_qg = Mire.qg_vel(N2D, a, b, c)
     n_mat_qg = length(vs_qg)
 
