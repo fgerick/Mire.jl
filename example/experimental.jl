@@ -88,6 +88,10 @@ function cacheint_Hsxyzpoly(n::Int,a::T,b::T,c::T) where T
     return cachedmat
 end
 
+#invalid diffusion:
+diffusion(B,B0,η) = η*Δ.(B+B0)
+viscous(u,ν) = ν*Δ.(u)
+
 
 """
     assemblemhd_diffusion(N::Int, a::T, b::T, c::T, Ω, b0, η; dtype::DataType=BigFloat, kwargs...) where T
@@ -103,23 +107,25 @@ Returns right hand side `A`, left hand side `B` and basis vectors `vs`.
 - `Ω`: rotation vector
 - `b0`: mean magnetic field vector
 - `η`: magnetic diffusivity
+- `ν`: kinematic viscosity
 - `dtype`: datatype, default `BigFloat` for integration of monomials
 - `kwargs`: other keyword arguments passed to lower functions
 """
-function assemblemhd_diffusion(N::Int,a::T,b::T,c::T,Ω,b0,η;
-                     dtype::DataType=BigFloat, kwargs...) where T
+function assemblemhd_diffusion(N::Int,a::T,b::T,c::T,Ω,b0,η,ν; kwargs...) where T
     n_mat = n_u(N)
     vs = vel(N,a,b,c)
-    cmat = cacheint(N,a,b,c; dtype=dtype)
+    cmat = cacheint(N,a,b,c)
 
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
-    projectforce!(view(A,1:n_mat,1:n_mat),cmat,vs,N, inertial; kwargs...)
-    projectforce!(view(A,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N, inertialmag; kwargs...)
-    projectforce!(view(B,1:n_mat,1:n_mat),cmat,vs,N,coriolis,Ω; kwargs...)
-    projectforce!(view(B,1:n_mat,n_mat+1:2n_mat),cmat,vs,N,lorentz,b0; kwargs...)
-    projectforce!(view(B,n_mat+1:2n_mat,1:n_mat),cmat,vs,N,advection,b0; kwargs...)
-    projectforce!(view(B,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N,diffusion,b0,η; kwargs...)
+    projectforce!(view(A,1:n_mat,1:n_mat),cmat,vs,N, Mire.inertial; kwargs...)
+    projectforce!(view(A,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N, Mire.inertialmag; kwargs...)
+    projectforce!(view(B,1:n_mat,1:n_mat),cmat,vs,N,Mire.coriolis,Ω; kwargs...)
+    projectforce!(view(B,1:n_mat,n_mat+1:2n_mat),cmat,vs,N,Mire.lorentz,b0; kwargs...)
+    vmat = projectforce(N,cmat,vs,Mire.viscous,ν; kwargs...)
+    view(B,1:n_mat,1:n_mat).+=vmat
+    projectforce!(view(B,n_mat+1:2n_mat,1:n_mat),cmat,vs,N,Mire.advection,b0; kwargs...)
+    projectforce!(view(B,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N,Mire.diffusion,b0,η; kwargs...)
 
     return A,B, vs
 end

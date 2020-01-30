@@ -93,7 +93,8 @@ inertialmag(B)  = B
 advection(u,B0)  = curl(u × B0)
 
 #invalid diffusion:
-diffusion(B,B0,η) = η*Δ.(B)
+diffusion(B,B0,η) = η*Δ.(B+B0)
+viscous(u,ν) = ν*Δ.(u)
 
 """
     eigenvel(v,α)
