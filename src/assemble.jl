@@ -195,3 +195,49 @@ function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
 
     return A, B, vs_qg
 end
+
+
+#Quagmire
+
+function assemblemhd_quag(N::Int, a::T, b::T, c::T, Ω::T, A0;
+                     cmat = cacheint2D(N,a,b,c), kwargs...) where T
+    vs_qg = Mire.qg_vel(N, a, b, c)
+    n_mat_qg = length(vs_qg)
+
+    nmat = 2n_mat_qg
+    A = spzeros(T, nmat, nmat)
+    B = spzeros(T, nmat, nmat)
+    projectforce_2D!(view(A, 1:n_mat_qg, 1:n_mat_qg),           N, cmat, Mire.poly_inertial,a,b,c; kwargs...)
+    projectforce_2D!(view(A, n_mat_qg+1:nmat, n_mat_qg+1:nmat), N, cmat, Mire.poly_inertialmag,a,b,c; kwargs...)
+    projectforce_2D!(view(B, 1:n_mat_qg, 1:n_mat_qg),           N, cmat, Mire.poly_coriolis,a,b,c, Ω; kwargs...)
+    projectforce_2D!(view(B, 1:n_mat_qg, n_mat_qg+1:nmat),      N, cmat, Mire.poly_lorentz,a,b,c, A0; kwargs...)
+    projectforce_2D!(view(B, n_mat_qg+1:nmat, 1:n_mat_qg),      N, cmat, Mire.poly_advection,a,b,c, A0; kwargs...)
+
+    return A, B, vs_qg
+end
+
+
+
+function projectforce_2D!(A::AbstractArray{T,2},N::Integer, cmat, polyfun::Function,a::T,b::T,c::T, args...) where T
+
+    combos = qg_combos(N)
+
+    n_A = length(combos)
+    @assert size(A,1)==n_A
+    @assert size(A,2)==n_A
+
+    @inbounds for j=1:n_A
+        p = polyfun(combos[j]...,a,b,c,args...)
+        for i=1:n_A
+            A[i,j] = inner_product_2D(cmat,p,Π(combos[i]...),a,b,c)
+        end
+    end
+end
+
+
+function projectforce_2D(N::Integer,cmat, polyfun::Function, a::T,b::T,c::T, args...) where T
+    n_combos = n_unknown(N)
+    A = spzeros(T,n_combos,n_combos)
+    projectforce_2D!(A,N,cmat, polyfun,a,b,c,args...)
+    return A
+end

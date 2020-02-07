@@ -96,9 +96,47 @@ function cacheint(n::Int, a::T, b::T, c::T) where T
     return cachedmat
 end
 
+#Quagmire integration
 
 
-# ∫xⁱyʲzᵏ(n×r)dS:
+# integrates ∫∫ x^i y^j sabc h^3 dsdϕ
+function int_monomial_ellipse(i::BigInt,j::BigInt,a::Real,b::Real,c::Real)
+    return ((3*(1+(-1)^i)*(1+(-1)^j)*a^(1+i)*b^(1+j)*c^3*√big(π)*gamma((1+i)/2)*gamma((1+j)/2))/(16*gamma((7+i+j)/2)))
+end
+
+function 𝒟(Π,a::T,b::T,c::T) where T
+    if Π == 0
+        return 0
+    else
+        cs = coefficients(Π)
+        exps = exponents.(monomial.(terms(Π)))
+        return sum([co*poly_inertial(nmpair...,a,b,c) for (nmpair,co) in zip(exps,cs)])
+    end
+end
+
+function inner_product_2D(cmat,u,v,a::T,b::T,c::T) where T
+    duv = u*𝒟(v,a,b,c)
+    ip = zero(eltype(cmat))
+    cs = coefficients(duv)
+    exps = exponents.(monomials(duv))
+    @inbounds for i=1:length(cs)
+        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
+    end
+    return ip
+end
+
+function cacheint2D(n::Int,a::T,b::T,c::T) where T
+    Nmax = 4n
+    cmat = zeros(T,Nmax+1,Nmax+1)
+    for i=0:Nmax,j=0:Nmax
+        cmat[i+1,j+1] = int_monomial_ellipse(big(i),big(j),a,b,c)
+    end
+    return cmat
+end
+
+
+
+# convenience to integrate the torque ∫xⁱyʲzᵏ(n×r)dS:
 
 function int_surface_ellipsoid_torque(coordinate::Integer,i::Integer,j::Integer,k::Integer,a::T,b::T,c::T,r::T=one(T)) where T
         if coordinate==1

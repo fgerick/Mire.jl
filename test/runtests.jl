@@ -37,3 +37,19 @@ end
     @test any(isapprox.(esol.values,fast(1,1,Le),atol=1e-9))
     @test any(isapprox.(esol.values,fast(2,1,Le),atol=1e-9))
 end
+
+@testset "QG from scalar vs QG 3D projection" begin
+    N,a,b,c,Le = 5,1.25,0.8,1.0,1e-5
+    Ω = 1/Le
+    A0 = (x^0*y^0 + x)/3
+    b0 = (Mire.qg_vel(0,0,a,b,c) + Mire.qg_vel(1,0,a,b,c))/3
+
+    LHS,RHS,vsqg=Mire.assemblemhd_quag(N,a,b,c,Ω,A0)
+    LHS2,RHS2,vsqg2 = Mire.assemblemhd_qg(N,a,b,c,[0,0,Ω],b0)
+
+    s1 = eigen(Matrix(RHS),Matrix(LHS))
+    s2 = eigen(Matrix(RHS2),Matrix(LHS2))
+
+    @test sort(abs.(s1.values),rev=true) ≈ sort(abs.(s2.values),rev=true)
+
+end
