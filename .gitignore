@@ -5,3 +5,4 @@ deps/deps.jl
 .sync-config.cson
 docs/build/
 test/testdev.jl
+Manifest.toml

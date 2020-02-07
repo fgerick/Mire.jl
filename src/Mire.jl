@@ -1,6 +1,6 @@
 module Mire
 
-using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions, HCubature
+using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
 
 export x,y,z,s,H,Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
