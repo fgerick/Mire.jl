@@ -75,8 +75,8 @@ We can reconstruct the `k`-th eigenvelocity $\mathbf{v}_k$ by calling `eigenvel`
 
 
 ```julia
-k=length(esol.values)-3
-v_k = eigenvel(N,uj,esol.vectors,k,a,b,c)
+k = eachindex(esol.values)[0.23.<imag.(esol.values).<0.24]
+v_k = eigenvel(esol.vectors[:,k],uj)
 ```
 
 `v_k` is now an array of cartesian polynomials with complex coefficients.
