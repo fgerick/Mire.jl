@@ -72,7 +72,7 @@ end
 
 
 """
-    assemblehd(N::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
+    assemblehd(N::Int, a::T, b::T, c::T, Ω ; cmat = cacheint(N,a,b,c), vs = vel(N,a,b,c), kwargs...) where T
 
 Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
 left hand side `B` and basis vectors `vs`.
@@ -86,9 +86,9 @@ left hand side `B` and basis vectors `vs`.
 - `dtype`: datatype, default `BigFloat` for integration of monomials
 - `kwargs`: other keyword arguments passed to lower functions
 """
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ; kwargs...) where T
-    cmat = cacheint(N,a,b,c)
-    vs = vel(N,a,b,c)
+function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
+                    cmat = cacheint(N,a,b,c),
+                    vs = vel(N,a,b,c), kwargs...) where T
 
     A = projectforce(N,cmat,vs,inertial; kwargs...)
     B = projectforce(N,cmat,vs,coriolis,Ω; kwargs...)
