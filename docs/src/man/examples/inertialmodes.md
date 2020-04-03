@@ -6,7 +6,7 @@ The examples are also available as notebooks in the source code folder [example]
 
 We want to solve the inertial mode equation
 
-$$\partial_t \mathbf{u} = 2\mathbf{\Omega}\times\mathbf{u}-\nabla p$$
+$$\partial_t \mathbf{u} = -2\mathbf{\Omega}\times\mathbf{u}-\nabla p$$
 
 by expanding the velocity in a Cartesian polynomial basis and projecting onto these basis vectors following [Lebovitz (1989)](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913).
 
@@ -37,7 +37,7 @@ N = 3
 
 Assembling projects the left and right hand side of the inertial mode equation onto the basis vectors $\mathbf{u}_j$. The pressure gradient force vanishes naturally in the projection. For the integration a convenient formula is used (compare [Lebovitz, 1989](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913)). Calling `assemblehd` outputs two sparse matrices `A` and `B` and the basis vectors `uj`. The Matrix `B` represents the left hand side and `A` the right hand side of
 
-$$\omega \int \mathbf{u}_i \cdot\mathbf{u}_j\, \mathrm{d}V = 2\int (\mathbf{\Omega}\times\mathbf{u}_i)\cdot\mathbf{u}_j\, \mathrm{d}V$$
+$$\omega \int \mathbf{u}_i \cdot\mathbf{u}_j\, \mathrm{d}V = -2\int (\mathbf{\Omega}\times\mathbf{u}_i)\cdot\mathbf{u}_j\, \mathrm{d}V$$
 
 so that the eigen problem reads
 
