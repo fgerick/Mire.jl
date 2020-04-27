@@ -11,7 +11,7 @@ Check out the [documentation](https://fgerick.github.io/Mire.jl/dev/) for help o
 
 ## Questions
 
-If you have trouble using this library or find errors in the examples, please don't hesitate to file in issue on GitHub or get in touch with me directly (via [mail](mailto:felix.gerick@univ-grenoble-alpes.fr) or [researchgate](https://www.researchgate.net/profile/Felix_Gerick)).
+If you have trouble using this library or find errors in the examples, please don't hesitate to file an issue on GitHub or get in touch with me directly (via [mail](mailto:felix.gerick@univ-grenoble-alpes.fr) or [researchgate](https://www.researchgate.net/profile/Felix_Gerick)).
 
 ## Citation
 
