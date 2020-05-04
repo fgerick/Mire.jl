@@ -4,6 +4,9 @@
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://fgerick.github.io/Mire.jl/dev/)
 [![Build Status](https://travis-ci.com/fgerick/Mire.jl.svg?token=NJNkFC9qALxxCxMBhjwi&branch=master)](https://travis-ci.com/fgerick/Mire.jl)
+[![codecov](https://codecov.io/gh/fgerick/Mire.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/fgerick/Mire.jl)
+
+
 
 Solve for (magneto)hydrodynamic modes in rapidly rotating ellipsoids using a Galerkin method with basis vectors constructed from Cartesian monomials. The code supports fully 3-D, fully quasi-geostrophic (QG) and a hybrid model with QG velocities and 3-D magnetic field perturbations.
 
