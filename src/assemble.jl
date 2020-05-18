@@ -95,11 +95,24 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
     return A,B, vs
 end
 
+
+function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; kwargs...)
+    nu = length(vbasis)
+    nb = length(bbasis)
+    nmat = nu+nb
+    projectforce!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
+    projectforce!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
+    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
+    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
+    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
+    nothing
+end
+
 """
     assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat, kwargs...) where T
 
 Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-left hand side `B` and basis vectors `vs`.
+left hand side `B` and basis vectors `vbasis`.
 
 #Arguments:
 - `N`: maximum monomial degree
@@ -113,26 +126,32 @@ left hand side `B` and basis vectors `vs`.
 """
 function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
                      cmat = cacheint(N,a,b,c), kwargs...) where T
-    n_mat = n_u(N)
-    vs = vel(N,a,b,c)
 
+    vbasis = vel(N,a,b,c)
+    n_mat = length(vbasis)
     A = spzeros(T,2n_mat,2n_mat)
     B = spzeros(T,2n_mat,2n_mat)
-    projectforce!(view(A,1:n_mat,1:n_mat),cmat,vs,N, inertial; kwargs...)
-    projectforce!(view(A,n_mat+1:2n_mat,n_mat+1:2n_mat),cmat,vs,N, inertialmag; kwargs...)
-    projectforce!(view(B,1:n_mat,1:n_mat),cmat,vs,N,coriolis,Ω; kwargs...)
-    projectforce!(view(B,1:n_mat,n_mat+1:2n_mat),cmat,vs,N,lorentz,b0; kwargs...)
-    projectforce!(view(B,n_mat+1:2n_mat,1:n_mat),cmat,vs,N,advection,b0; kwargs...)
-
-    return A,B, vs
+    assemblemhd!(A,B,cmat,vbasis,vbasis,Ω,b0; kwargs...)
+    return A,B, vbasis
 end
+
+function assemblemhd(Ω,b0,vbasis,bbasis,cmat::Array{T,3}; kwargs...) where T
+    nu = length(vbasis)
+    nb = length(bbasis)
+    nmat = nu+nb
+    A = spzeros(T,nmat,nmat)
+    B = spzeros(T,nmat,nmat)
+    assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; kwargs...)
+    return A,B
+end
+
 
 
 """
     assemblehd_hybrid(N2D::Int, N3D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
 
 Assemble the sparse matrices of the hybrid QG and 3D MHD mode problem.
-Returns right hand side `A`,left hand side `B` and basis vectors `vs` and `vs_qg`.
+Returns right hand side `A`,left hand side `B` and basis vectors `bbasis` and `vbasis_qg`.
 
 #Arguments:
 - `N2D`: maximum monomial degree of QG velocity
@@ -146,22 +165,19 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs` and `vs_qg
 """
 function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
                      cmat = cacheint(N3D,a,b,c), kwargs...) where T
-    n_mat = Mire.n_u(N3D)
-    vs = Mire.vel(N3D,a,b,c)
-    vs_qg = Mire.qg_vel(N2D,a,b,c)
+    # n_mat = Mire.n_u(N3D)
+    bbasis = Mire.vel(N3D,a,b,c)
+    n_mat = length(bbasis)
+    vbasis_qg = Mire.qg_vel(N2D,a,b,c)
     n_mat_qg = length(vs_qg)
 
 
     nmat=n_mat+n_mat_qg
     A = spzeros(T,nmat,nmat)
     B = spzeros(T,nmat,nmat)
-    projectforce!(view(A,1:n_mat_qg,1:n_mat_qg),            cmat, vs_qg, vs_qg, Mire.inertial; kwargs...)
-    projectforce!(view(A,n_mat_qg+1:nmat,n_mat_qg+1:nmat),  cmat, vs, vs, Mire.inertialmag; kwargs...)
-    projectforce!(view(B,1:n_mat_qg,1:n_mat_qg),            cmat, vs_qg, vs_qg, Mire.coriolis,Ω; kwargs...)
-    projectforce!(view(B,1:n_mat_qg,n_mat_qg+1:nmat),       cmat, vs_qg, vs, Mire.lorentz,b0; kwargs...)
-    projectforce!(view(B,n_mat_qg+1:nmat,1:n_mat_qg),       cmat, vs,vs_qg, Mire.advection,b0; kwargs...)
 
-    return A,B, vs, vs_qg
+    assemblemhd!(A,B,cmat,vbasis_qg,bbasis,Ω,b0; kwargs...)
+    return A,B, bbasis, vbasis_qg
 end
 
 """
@@ -187,17 +203,13 @@ function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
     nmat = 2n_mat_qg
     A = spzeros(T, nmat, nmat)
     B = spzeros(T, nmat, nmat)
-    projectforce!(view(A, 1:n_mat_qg, 1:n_mat_qg),           cmat, vs_qg, vs_qg, Mire.inertial; kwargs...)
-    projectforce!(view(A, n_mat_qg+1:nmat, n_mat_qg+1:nmat), cmat, vs_qg, vs_qg, Mire.inertialmag; kwargs...)
-    projectforce!(view(B, 1:n_mat_qg, 1:n_mat_qg),           cmat, vs_qg, vs_qg, Mire.coriolis, Ω; kwargs...)
-    projectforce!(view(B, 1:n_mat_qg, n_mat_qg+1:nmat),      cmat, vs_qg, vs_qg, Mire.lorentz, b0; kwargs...)
-    projectforce!(view(B, n_mat_qg+1:nmat, 1:n_mat_qg),      cmat, vs_qg, vs_qg, Mire.advection, b0; kwargs...)
+    assemblemhd!(A,B,cmat,vs_qg,vs_qg,Ω,b0; kwargs...)
 
     return A, B, vs_qg
 end
 
 
-#Quagmire
+#Quagmire (2D reduced equations)
 
 function assemblemhd_quag(N::Int, a::T, b::T, c::T, Ω::T, A0;
                      cmat = cacheint2D(N,a,b,c), kwargs...) where T
