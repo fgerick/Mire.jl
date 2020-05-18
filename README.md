@@ -21,3 +21,20 @@ If you have trouble using this library or find errors in the examples, please do
 If you use this software, please cite
 
 F Gerick, D Jault, J Noir, and J Vidal, (2020). Pressure torque of torsional Alfvén modes acting on an ellipsoidal mantle, Geophysical Journal International, [10.1093/gji/ggaa166](https://doi.org/10.1093/gji/ggaa166)
+
+```
+@article{10.1093/gji/ggaa166,
+    author = {Gerick, F and Jault, D and Noir, J and Vidal, J},
+    title = "{Pressure torque of torsional Alfvén modes acting on an ellipsoidal mantle}",
+    journal = {Geophysical Journal International},
+    volume = {222},
+    number = {1},
+    pages = {338-351},
+    year = {2020},
+    month = {04},
+    issn = {0956-540X},
+    doi = {10.1093/gji/ggaa166},
+    url = {https://doi.org/10.1093/gji/ggaa166},
+    eprint = {https://academic.oup.com/gji/article-pdf/222/1/338/33181751/ggaa166.pdf},
+}
+```
