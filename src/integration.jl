@@ -1,11 +1,11 @@
 ### Functions to define integrals of monomials over ellipsoidal volume and surface
 
-function int_monomial_ellipsoid(p::Monomial,a::T,b::T,c::T) where T
-    i = big(exponent(p,x))
-    j = big(exponent(p,y))
-    k = big(exponent(p,z))
-    return int_monomial_ellipsoid(i,j,k,a,b,c)
-end
+# function int_monomial_ellipsoid(p::Monomial,a::T,b::T,c::T) where T
+#     i = big(exponent(p,x))
+#     j = big(exponent(p,y))
+#     k = big(exponent(p,z))
+#     return int_monomial_ellipsoid(i,j,k,a,b,c)
+# end
 
 """
     int_monomial_ellipsoid(i::BigInt, j::BigInt, k::BigInt, a::T, b::T, c::T; dtype::DataType=BigFloat) where T
@@ -36,7 +36,7 @@ end
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(4^n*factorial(n))
 
-int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
+# int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
 
 """
@@ -46,21 +46,24 @@ DOCSTRING
 """
 function int_polynomial_ellipsoid(p,cmat)
     ip = zero(eltype(cmat))
-    cs = coefficients(p)
-    exps = exponents.(monomial.(terms(p)))
-    @simd for i=1:length(cs)
+    cs = Rational.(collect(coeffs(p)))
+    exps = collect(exponent_vectors(p))
+    for i=1:length(cs)
         ip+=cs[i]*cmat[(exps[i] .+ 1)...]
     end
     return ip
 end
 
+#
+# """
+#     inner_product(u,v,a,b,c)
+#
+# Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
+# """
+# inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
-"""
-    inner_product(u,v,a,b,c)
 
-Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
-"""
-inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
+dotp(u,v) = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
 
 """
     inner_product(cmat, u, v; thresh=eps())
@@ -74,7 +77,7 @@ DOCSTRING
 - `thresh`: DESCRIPTION
 """
 function inner_product(cmat, u, v; thresh=eps())
-    duv = dot(u,v)
+    duv = dotp(u,v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
 
@@ -82,7 +85,7 @@ end
 """
 Function to precalculate monomial integrations.
 """
-function cacheint(n::Int, a::T, b::T, c::T) where T
+function cacheint(n::Int, a::T, b::T, c::T) where T <: Rational{BigInt}
     Nmax = 4n
     cachedmat = zeros(T,Nmax+1,Nmax+1,Nmax+1)
     @inbounds for i = 0:Nmax,j = 0:Nmax, k = 0:Nmax

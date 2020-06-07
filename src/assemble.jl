@@ -15,12 +15,12 @@ DOCSTRING
 - `kwargs`: other keyword arguments
 """
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
-            N::Integer, forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+            N::Integer, forcefun::Function, args...; kwargs...) where {T, P}
     projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
 end
 
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+            forcefun::Function, args...; kwargs...) where {T, P}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -51,7 +51,7 @@ where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 - `args`: other arguments needed for `forcefun`
 """
 function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
-        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+        forcefun::Function, args...; kwargs...) where {T, P}
     n_combos = length(vs)
     A = spzeros(T,n_combos,n_combos)
     projectforce!(A, cmat, vs, N, forcefun, args...; kwargs...)
@@ -59,7 +59,7 @@ function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
 end
 
 function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+        forcefun::Function, args...; kwargs...) where {T, P}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)

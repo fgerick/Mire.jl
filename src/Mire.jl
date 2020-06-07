@@ -1,11 +1,14 @@
 module Mire
 
-using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
+using LoadFlint, Nemo, LinearAlgebra, SparseArrays, SpecialFunctions
 
-export x,y,z,s,H,Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
+# export x,y,z,S
+
+export Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
     inertial, coriolis, lorentz, advection,
     eigen, vel, eigenvel,r
+
 
 include("assemble.jl")
 
@@ -17,14 +20,14 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 # Cartesian coordinates as polynomial variables
 
-@polyvar x y z s H
+const S, (x,y,z) = PolynomialRing(QQ,["x","y","z"])
 
 # Monomials
 Π(n::Int,m::Int,l::Int) = x^n*y^m*z^l
 Π(n::BigInt,m::BigInt,l::BigInt) = Π(Int(n),Int(m), Int(l))
 
 # Calculus definitions
-∂ = differentiate
+∂ = derivative
 ∇(ψ) = [∂.(ψ,(x,y,z))...]
 Δ(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
 divergence(u) = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
@@ -63,7 +66,7 @@ function combos(N::Int)
 
 Compute all velocity basis vectors for a given maximal degree N (Lebovitz 1989, eq. 41-42)
 """
-function vel(N::Int,a::T,b::T,c::T) where T
+function vel(N::Int,a::T,b::T,c::T) where T <: Rational{BigInt}
     gp,hp = combos(N)
     v_1 = [v1(h...,a,b,c) for h in vcat(gp,hp)]
     v_2 = [v2(h...,a,b,c) for h in vcat(gp,hp)]
@@ -113,7 +116,7 @@ qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<=N)]
 
 Generate basis vector \$\\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$
 """
-function qg_vel(n::Integer,m::Integer,a::T,b::T,c::T) where T
+function qg_vel(n::Integer,m::Integer,a::T,b::T,c::T) where T <: Rational{BigInt}
     h2 = c^2*(1-x^2/a^2-y^2/b^2)
     ez = [0,0,1]
     hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
@@ -175,7 +178,7 @@ end
 Polynomial for basis (n,m) of Lorentz force.
 """
 function poly_lorentz(n::Integer,m::Integer,a::T,b::T,c::T,A0) where T
-    coeffs_A0, nm_pairs_A0 = coefficients(A0), exponents.(monomials(A0))
+    coeffs_A0, nm_pairs_A0 = collect(coeffs((A0))), collect(exponents(A0))
     D2A0 = sum([cf*poly_inertial(nmpair...,a,b,c) for (cf,nmpair) in zip(coeffs_A0,nm_pairs_A0)])
     D2A = poly_inertial(n,m,a,b,c)
     h2 = -c^2*(x^2/a^2+y^2/b^2-1)

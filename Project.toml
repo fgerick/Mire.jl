@@ -5,8 +5,8 @@ version = "0.2.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
+LoadFlint = "472f376f-f1cf-461b-9ac1-d103423be9b7"
+Nemo = "2edaba10-b0f1-5616-af89-8c11ac63239a"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-TypedPolynomials = "afbbf031-7a57-5f58-a1b9-b774a0fad08d"
