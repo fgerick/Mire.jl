@@ -74,11 +74,6 @@ DOCSTRING
 - `thresh`: DESCRIPTION
 """
 function inner_product(cmat, u, v; thresh=eps())
-    if thresh != eps()
-        u = truncpolyvec(u,thresh)
-        v = truncpolyvec(v,thresh)
-    end
-
     duv = dot(u,v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
