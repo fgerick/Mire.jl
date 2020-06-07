@@ -22,6 +22,8 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 const S, (x,y,z) = PolynomialRing(QQ,["x","y","z"])
 
+import Base./; /(p::Mire.Nemo.fmpq_mpoly, a::T) where T<:Rational = p*(one(a)/a)
+
 # Monomials
 Π(n::Int,m::Int,l::Int) = x^n*y^m*z^l
 Π(n::BigInt,m::BigInt,l::BigInt) = Π(Int(n),Int(m), Int(l))
