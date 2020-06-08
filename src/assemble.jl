@@ -35,6 +35,23 @@ function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{
     end
 end
 
+function projectforcet!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
+            forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    @assert n_1 == size(A,1)
+    @assert n_2 == size(A,2)
+
+    @inbounds for j=1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        Threads.@threads for i=1:n_1
+            A[i,j] = Mire.inner_product(cmat,vs_i[i],f; kwargs...)
+        end
+    end
+end
+
+
 """
     projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
     forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
@@ -96,15 +113,15 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
 end
 
 
-function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; kwargs...)
+function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; pfun = projectforce!, kwargs...)
     nu = length(vbasis)
     nb = length(bbasis)
     nmat = nu+nb
-    projectforce!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
-    projectforce!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
-    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
-    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
-    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
+    pfun(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
+    pfun(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
+    pfun(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
+    pfun(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
+    pfun(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
     nothing
 end
 
