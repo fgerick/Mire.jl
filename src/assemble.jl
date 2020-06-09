@@ -30,7 +30,7 @@ function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{
     @inbounds for j=1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         for i=1:n_1
-            A[i,j] = Mire.inner_product(cmat,vs_i[i],f; kwargs...)
+            A[i,j] = Mire.inner_product_real(cmat,vs_i[i],f; kwargs...)
         end
     end
 end
@@ -46,7 +46,7 @@ function projectforcet!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array
     @inbounds for j=1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         Threads.@threads for i=1:n_1
-            A[i,j] = Mire.inner_product(cmat,vs_i[i],f; kwargs...)
+            A[i,j] = Mire.inner_product_real(cmat,vs_i[i],f; kwargs...)
         end
     end
 end

@@ -44,11 +44,13 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 
 DOCSTRING
 """
-function int_polynomial_ellipsoid(p,cmat)
-    ip = zero(eltype(cmat))
+function int_polynomial_ellipsoid(p,cmat::Array{T,3})::T where T
+    ip = zero(T)
     cs = coefficients(p)
     exps = exponents.(monomial.(terms(p)))
-    @simd for i=1:length(cs)
+
+    @assert maxdegree(p)<=size(cmat,1)
+    @inbounds for i=1:length(cs)
         ip+=cs[i]*cmat[(exps[i] .+ 1)...]
     end
     return ip
@@ -62,6 +64,9 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
+
+dotp(u,v) = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
+
 """
     inner_product(cmat, u, v; thresh=eps())
 
@@ -73,11 +78,15 @@ DOCSTRING
 - `v`: DESCRIPTION
 - `thresh`: DESCRIPTION
 """
-function inner_product(cmat, u, v; thresh=eps())
+function inner_product(cmat, u, v)
     duv = dot(u,v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
 
+function inner_product_real(cmat, u, v)
+    duv = dotp(u,v)
+    return int_polynomial_ellipsoid(duv,cmat)
+end
 
 """
 Function to precalculate monomial integrations.
