@@ -44,8 +44,8 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 
 DOCSTRING
 """
-function int_polynomial_ellipsoid(p,cmat::Array{T,3})::T where T
-    ip = zero(T)
+function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
+    ip = zero(promote_type(S,T))
     cs = coefficients(p)
     exps = exponents.(monomial.(terms(p)))
 
