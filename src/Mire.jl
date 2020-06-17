@@ -1,6 +1,11 @@
 module Mire
 
-using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions
+using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, SpecialFunctions, StaticArrays
+
+@polyvar x y z s H
+
+P{T} = TypedPolynomials.Polynomial{T,TypedPolynomials.Term{T,TypedPolynomials.Monomial{(x, y, z),3}},Array{TypedPolynomials.Term{T,TypedPolynomials.Monomial{(x, y, z),3}},1}}
+PVec{T} = SVector{3,P{T}}
 
 export x,y,z,s,H,Π, ∇, Δ, divergence, curl, F, ex,ey,ez,
     combos, N1, N2, n_u, n_c,
@@ -17,7 +22,7 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 # Cartesian coordinates as polynomial variables
 
-@polyvar x y z s H
+
 
 # Monomials
 Π(n::Int,m::Int,l::Int) = x^n*y^m*z^l
@@ -25,26 +30,26 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 # Calculus definitions
 ∂ = differentiate
-∇(ψ) = [∂.(ψ,(x,y,z))...]
-Δ(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
-divergence(u) = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
-curl(u) = [∂(u[3],y)-∂(u[2],z),∂(u[1],z)-∂(u[3],x),∂(u[2],x)-∂(u[1],y)]
-advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1:3]
+∇(ψ::P{T}) where T = PVec{T}(∂.(ψ,(x,y,z))...)
+Δ(ψ::P{T}) where T = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
+divergence(u::PVec{T}) where T = ∂(u[1],x)+∂(u[2],y)+∂(u[3],z)
+curl(u::PVec{T}) where T = PVec{T}(∂(u[3],y)-∂(u[2],z),∂(u[1],z)-∂(u[3],x),∂(u[2],x)-∂(u[1],y))
+advecterm(u::PVec{T},v::PVec{T}) where T = PVec{T}([u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i=1:3]...)
 # Lebovitz 1989, eq. (39b)
 F(a,b,c) = (1-x^2/a^2-y^2/b^2-z^2/c^2)
 
 # Cartesian unit vectors
-const ex = [1,0,0]
-const ey = [0,1,0]
-const ez = [0,0,1]
+const ex = SVector{3,Int}(1,0,0) #∇(P{Int}(x))
+const ey = SVector{3,Int}(0,1,0) #∇(P{Int}(y))
+const ez = SVector{3,Int}(0,0,1) #∇(P{Int}(z))
 
-const r = [x, y, z]
+const r = PVec{Int64}(x*y^0*z^0,x^0*y*z^0,x^0*y^0*z)
 
 
 # Basis vectors, Lebovitz 1989, eq. (41-42)
-v1(n::Int,m::Int,l::Int,a,b,c) = ∇(Π(n,m,l)*F(a,b,c))×ex
-v2(n::Int,m::Int,l::Int,a,b,c) = ∇(Π(n,m,l)*F(a,b,c))×ey
-v3(n::Int,m::Int,l::Int,a,b,c) = ∇(Π(n,m,l)*F(a,b,c))×ez
+v1(n::Int,m::Int,l::Int,a::T,b::T,c::T) where T = ∇(Π(n,m,l)*F(a,b,c))×ex
+v2(n::Int,m::Int,l::Int,a::T,b::T,c::T) where T = ∇(Π(n,m,l)*F(a,b,c))×ey
+v3(n::Int,m::Int,l::Int,a::T,b::T,c::T) where T = ∇(Π(n,m,l)*F(a,b,c))×ez
 
 
 """

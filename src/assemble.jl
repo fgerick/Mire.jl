@@ -1,7 +1,7 @@
 ### Functions to create matrices and assemble the full system.
 
 """
-    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
+    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...; kwargs...) where T
 
 DOCSTRING
 
@@ -14,13 +14,13 @@ DOCSTRING
 - `args`: other arguments needed for `forcefun`
 - `kwargs`: other keyword arguments
 """
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
-            N::Integer, forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Vector{PVec{T}},
+            N::Integer, forcefun::Function, args...; kwargs...) where T
     projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
 end
 
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Vector{PVec{T}},vs_j::Vector{PVec{T}},
+            forcefun::Function, args...; kwargs...) where T
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -35,8 +35,31 @@ function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{
     end
 end
 
-function projectforcet!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce_symmetric!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Vector{PVec{T}},vs_j::Vector{PVec{T}},
+            forcefun::Function, args...; kwargs...) where T
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    @assert n_1 == size(A,1)
+    @assert n_2 == size(A,2)
+
+    @inbounds for j=1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        for i=j:n_1
+            A_ij = Mire.inner_product_real(cmat,vs_i[i],f; kwargs...)
+            if abs(A_ij)>eps()
+                A[i,j] = A_ij
+                if i!=j
+                    A[j,i] = A_ij
+                end
+            end
+        end
+    end
+end
+
+
+function projectforcet!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Vector{PVec{T}},vs_j::Vector{PVec{T}},
+            forcefun::Function, args...; kwargs...) where T
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -53,8 +76,8 @@ end
 
 
 """
-    projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
-    forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
+    projectforce(N::Integer,cmat::Array{T,3},vs::Vector{PVec{T}},
+    forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where T
 
 Allocates new matrix `A` and fills elements by calling
 projectforce!(A,cmat,vs,forcefun, args...; kwargs...)
@@ -67,16 +90,16 @@ where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 - `forcefun`: function of the force, e.g. coriolis
 - `args`: other arguments needed for `forcefun`
 """
-function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
-        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce(N::Integer,cmat::Array{T,3},vs::Vector{PVec{T}},
+        forcefun::Function, args...; kwargs...) where T
     n_combos = length(vs)
     A = spzeros(T,n_combos,n_combos)
     projectforce!(A, cmat, vs, N, forcefun, args...; kwargs...)
     return A
 end
 
-function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
+function projectforce(cmat::Array{T,3},vs_i::Vector{PVec{T}},vs_j::Vector{PVec{T}},
+        forcefun::Function, args...; kwargs...) where T
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -113,17 +136,30 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
 end
 
 
-function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; pfun = projectforce!, kwargs...)
+function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; kwargs...)
     nu = length(vbasis)
     nb = length(bbasis)
     nmat = nu+nb
-    pfun(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
-    pfun(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
-    pfun(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
-    pfun(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
-    pfun(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
+    projectforce_symmetric!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...)
+    projectforce_symmetric!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
+    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
+    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
+    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
     nothing
 end
+
+function assemblemhd!(A,B,cmat,vbbasis,Ω,b0; kwargs...)
+    nu = length(vbbasis)
+    nb = nb
+    nmat = nu+nb
+    projectforce_symmetric!(view(A,1:nu,1:nu),cmat,vbbasis,vbbasis, inertial; kwargs...)
+    view(A,nu+1:nmat,nu+1:nmat) .= view(A,1:nu,1:nu) #if vbasis and bbasis are the same
+    projectforce!(view(B,1:nu,1:nu),cmat,vbbasis,vbbasis,coriolis,Ω; kwargs...) #Ω×u
+    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbbasis,vbbasis,lorentz,b0; kwargs...) #j×b
+    projectforce!(view(B,nu+1:nmat,1:nu),cmat,vbbasis,vbbasis,advection,b0; kwargs...)
+    nothing
+end
+
 
 """
     assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat, kwargs...) where T
