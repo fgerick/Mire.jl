@@ -34,7 +34,7 @@ function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T)
 end
 
 #Γ(1/2+n)/√π
-gammanp1half(n::Integer) = factorial(2n)//(4^n*factorial(n))
+gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
