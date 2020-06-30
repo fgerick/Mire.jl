@@ -86,21 +86,21 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
                     cmat = cacheint(N,a,b,c),
                     vs = vel(N,a,b,c), kwargs...) where T
 
-    A = projectforce(N,cmat,vs,vs,inertial; kwargs...)
-    B = projectforce(N,cmat,vs,vs,coriolis,Ω; kwargs...)
+    A = projectforce(cmat,vs,inertial; kwargs...)
+    B = projectforce(cmat,vs,coriolis,Ω; kwargs...)
     return A,B, vs
 end
 
 
-function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; pfun = projectforce!, kwargs...)
+function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0; kwargs...)
     nu = length(vbasis)
     nb = length(bbasis)
     nmat = nu+nb
-    pfun(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
-    pfun(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
-    pfun(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
-    pfun(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
-    pfun(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
+    projectforce!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial; kwargs...) #∂u/∂t
+    projectforce!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial; kwargs...) #∂j/∂t
+    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω; kwargs...) #Ω×u
+    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0; kwargs...) #j×b
+    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0; kwargs...)
     nothing
 end
 
@@ -125,7 +125,7 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
 
     vbasis = vel(N,a,b,c)
     bbasis = vbasis
-    A,B = assemlemhd(Ω,b0,vbasis,bbasis,cmat; kwargs...)
+    A,B = assemblemhd(Ω,b0,vbasis,bbasis,cmat; kwargs...)
     return A,B, vbasis
 end
 
