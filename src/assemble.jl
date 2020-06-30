@@ -35,46 +35,23 @@ function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{
     end
 end
 
-function projectforcet!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
-
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-    @assert n_1 == size(A,1)
-    @assert n_2 == size(A,2)
-
-    @inbounds for j=1:n_2
-        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-        Threads.@threads for i=1:n_1
-            A[i,j] = Mire.inner_product_real(cmat,vs_i[i],f; kwargs...)
-        end
-    end
-end
-
 
 """
-    projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
+    projectforce(N::Integer,cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
     forcefun::Function,a::T,b::T,c::T, args...; kwargs...) where {T, P <: Polynomial{T}}
 
 Allocates new matrix `A` and fills elements by calling
-projectforce!(A,cmat,vs,forcefun, args...; kwargs...)
+projectforce!(A,cmat,vs_i,vs_j,forcefun, args...; kwargs...)
 
 where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 
 #Arguments:
 - `N`: maximum monomial degree
-- `vs`: basis vectors
+- `vs_i`: basis vectors to project on
+- `vs_j`: basis vectors used for `forcefun`
 - `forcefun`: function of the force, e.g. coriolis
 - `args`: other arguments needed for `forcefun`
 """
-function projectforce(N::Integer,cmat::Array{T,3},vs::Array{Array{P,1},1},
-        forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
-    n_combos = length(vs)
-    A = spzeros(T,n_combos,n_combos)
-    projectforce!(A, cmat, vs, N, forcefun, args...; kwargs...)
-    return A
-end
-
 function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
         forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}}
 
@@ -86,6 +63,8 @@ function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Arr
     projectforce!(A, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
     return A
 end
+
+projectforce(cmat::Array{T,3},vs::Array{Array{P,1},1},forcefun::Function, args...; kwargs...) where {T, P <: Polynomial{T}} = projectforce(cmat,vs,vs,forcefun,args...; kwargs...)
 
 
 """
@@ -107,8 +86,8 @@ function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
                     cmat = cacheint(N,a,b,c),
                     vs = vel(N,a,b,c), kwargs...) where T
 
-    A = projectforce(N,cmat,vs,inertial; kwargs...)
-    B = projectforce(N,cmat,vs,coriolis,Ω; kwargs...)
+    A = projectforce(N,cmat,vs,vs,inertial; kwargs...)
+    B = projectforce(N,cmat,vs,vs,coriolis,Ω; kwargs...)
     return A,B, vs
 end
 
@@ -145,10 +124,8 @@ function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
                      cmat = cacheint(N,a,b,c), kwargs...) where T
 
     vbasis = vel(N,a,b,c)
-    n_mat = length(vbasis)
-    A = spzeros(T,2n_mat,2n_mat)
-    B = spzeros(T,2n_mat,2n_mat)
-    assemblemhd!(A,B,cmat,vbasis,vbasis,Ω,b0; kwargs...)
+    bbasis = vbasis
+    A,B = assemlemhd(Ω,b0,vbasis,bbasis,cmat; kwargs...)
     return A,B, vbasis
 end
 

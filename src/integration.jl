@@ -12,6 +12,10 @@ end
 
 Integrate a monomial over the ellipsoids volume \$\\int x^iy^jz^k dV\$.
 
+!!! warning "Missing factor"
+     The factor \$\\pi\$ is removed in the integration due to numerical reasons.
+     Remember to reintroduce it when the actual value of the integration is needed!
+
 #Arguments:
 - `i`: Exponent of `x`
 - `j`: Exponent of `y`
@@ -137,37 +141,3 @@ function cacheint2D(n::Int,a::T,b::T,c::T) where T
     end
     return cmat
 end
-
-
-
-# convenience to integrate the torque ∫xⁱyʲzᵏ(n×r)dS:
-
-function int_surface_ellipsoid_torque(coordinate::Integer,i::Integer,j::Integer,k::Integer,a::T,b::T,c::T,r::T=one(T)) where T
-        if coordinate==1
-             if iseven(i) && isodd(i+j) && isodd(k)
-                return 8*a^(1+i)*b^j*(c^2 - b^2)*c^k*r^(3 + i + j + k)*gamma((1+i)/2)*gamma(1+j/2)*gamma(1+k/2)/(4*gamma((5+i+j+k)/2))
-            else
-                return zero(T)
-            end
-        elseif coordinate==2
-            if isodd(i) && isodd(i+j) && isodd(k)
-                return 8*a^i*b^(1+j)*(a^2 - c^2)*c^k*r^(3 + i + j + k)*gamma(1+i/2)*gamma((1+j)/2)*gamma(1+k/2)/(4*gamma((5+i+j+k)/2))
-            else
-                return zero(T)
-            end
-        elseif coordinate==3
-            if isodd(i) && isodd(j) && iseven(k)
-                return 8*a^i*b^j*(b^2 - a^2)*c^(1 + k)*r^(3 + i + j + k)*gamma(1+i/2)*gamma(1+j/2)*gamma((1+k)/2)/(4*gamma((5+i+j+k)/2))
-            else
-                return zero(T)
-            end
-    else
-        error("coordinate must be 1,2 or 3")
-    end
-end
-
-function cacheint_surface_torque(N::Integer,coordinate::Integer,a::T,b::T,c::T,r::T=one(T)) where T
-    return [int_surface_ellipsoid_torque(coordinate,big(i),big(j),big(k),a,b,c,r) for i=0:N,j=0:N,k=0:N]
-end
-
-cacheint_surface_torque(N::Integer,a::T,b::T,c::T,r::T = one(T)) where T = [cacheint_surface_torque(N,i,a,b,c,r) for i=1:3]
