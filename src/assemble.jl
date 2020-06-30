@@ -12,7 +12,6 @@ DOCSTRING
 - `N`: maximum monomial degree
 - `forcefun`: function of the force, e.g. coriolis
 - `args`: other arguments needed for `forcefun`
-- `kwargs`: other keyword arguments
 """
 function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
             N::Integer, forcefun::Function, args...) where {T, P <: Polynomial{T}}
@@ -68,7 +67,7 @@ projectforce(cmat::Array{T,3},vs::Array{Array{P,1},1},forcefun::Function, args..
 
 
 """
-    assemblehd(N::Int, a::T, b::T, c::T, Ω ; cmat = cacheint(N,a,b,c), vs = vel(N,a,b,c), kwargs...) where T
+    assemblehd(N::Int, a::T, b::T, c::T, Ω ; cmat = cacheint(N,a,b,c), vs = vel(N,a,b,c)) where T
 
 Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
 left hand side `B` and basis vectors `vs`.
@@ -80,11 +79,10 @@ left hand side `B` and basis vectors `vs`.
 - `c`: semi-axis z
 - `Ω`: rotation vector
 - `dtype`: datatype, default `BigFloat` for integration of monomials
-- `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
                     cmat = cacheint(N,a,b,c),
-                    vs = vel(N,a,b,c), kwargs...) where T
+                    vs = vel(N,a,b,c)) where T
 
     A = projectforce(cmat,vs,inertial)
     B = projectforce(cmat,vs,coriolis,Ω)
@@ -105,7 +103,7 @@ function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0)
 end
 
 """
-    assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat, kwargs...) where T
+    assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat) where T
 
 Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
 left hand side `B` and basis vectors `vbasis`.
@@ -118,10 +116,9 @@ left hand side `B` and basis vectors `vbasis`.
 - `Ω`: rotation vector
 - `b0`: mean magnetic field vector
 - `dtype`: datatype, default `BigFloat` for integration of monomials
-- `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
-                     cmat = cacheint(N,a,b,c), kwargs...) where T
+                     cmat = cacheint(N,a,b,c)) where T
 
     vbasis = vel(N,a,b,c)
     bbasis = vbasis
@@ -142,7 +139,7 @@ end
 
 
 """
-    assemblehd_hybrid(N2D::Int, N3D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
+    assemblehd_hybrid(N2D::Int, N3D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat) where T
 
 Assemble the sparse matrices of the hybrid QG and 3D MHD mode problem.
 Returns right hand side `A`,left hand side `B` and basis vectors `bbasis` and `vbasis_qg`.
@@ -155,10 +152,9 @@ Returns right hand side `A`,left hand side `B` and basis vectors `bbasis` and `v
 - `c`: semi-axis z
 - `Ω`: rotation vector
 - `dtype`: datatype, default `BigFloat` for integration of monomials
-- `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
-                     cmat = cacheint(N3D,a,b,c), kwargs...) where T
+                     cmat = cacheint(N3D,a,b,c)) where T
     # n_mat = Mire.n_u(N3D)
     bbasis = Mire.vel(N3D,a,b,c)
     n_mat = length(bbasis)
@@ -175,7 +171,7 @@ function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
 end
 
 """
-    assemblehd_qg(N2D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat, kwargs...) where T
+    assemblehd_qg(N2D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat) where T
 
 Assemble the sparse matrices of the QG MHD mode problem.
 Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
@@ -187,10 +183,9 @@ Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
 - `c`: semi-axis z
 - `Ω`: rotation vector
 - `dtype`: datatype, default `BigFloat` for integration of monomials
-- `kwargs`: other keyword arguments passed to lower functions
 """
 function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
-                     cmat = cacheint(N2D,a,b,c), kwargs...) where T
+                     cmat = cacheint(N2D,a,b,c)) where T
     vs_qg = Mire.qg_vel(N2D, a, b, c)
     n_mat_qg = length(vs_qg)
 
@@ -206,7 +201,7 @@ end
 #Quagmire (2D reduced equations)
 
 function assemblemhd_quag(N::Int, a::T, b::T, c::T, Ω::T, A0;
-                     cmat = cacheint2D(N,a,b,c), kwargs...) where T
+                     cmat = cacheint2D(N,a,b,c)) where T
     vs_qg = Mire.qg_vel(N, a, b, c)
     n_mat_qg = length(vs_qg)
 
