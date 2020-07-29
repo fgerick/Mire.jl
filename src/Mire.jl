@@ -107,7 +107,7 @@ eigenvel(vs,αs,n_ev::Integer) = eigenvel(vs,αs[:,n_ev])
 
 
 ## QG tools
-qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<=N)]
+qg_combos(N::Integer) = [[i,j] for i=0:N for j=0:N if (i+j<N)]
 # qg_combos(N::Integer) = (N==0) ? [[0,0]] : vcat(combos(N-1),[[i,j] for i=0:N for j=0:N if (N-1<i+j<=N)]) #sorted
 
 """
