@@ -5,7 +5,7 @@ using MultivariatePolynomials, TypedPolynomials, LinearAlgebra, SparseArrays, Sp
 export x, y, z, r, Π, ∇, Δ, gradient, laplacian, divergence, curl, advecterm
 export F, ex,ey,ez, combos, N1, N2, n_u, n_c
 export inertial, coriolis, lorentz, advection
-export vel, eigenvel, qg_vel, geo_vel
+export vel, eigenvel, qg_vel, geo_vel, velocities, magneticfields
 
 include("assemble.jl")
 
@@ -104,6 +104,15 @@ end
 
 eigenvel(vs,αs,n_ev::Integer) = eigenvel(vs,αs[:,n_ev])
 
+function velocities(vs,αs)
+    nv = length(vs)
+    [eigenvel(vs,αs[1:nv,i]) for i=1:size(αs,2)]
+end
+
+function magneticfields(bs,αs)
+    nb = length(bs)
+    [eigenvel(bs,αs[end-nb+1:end,i]) for i=1:size(αs,2)]
+end
 
 
 ## QG tools
