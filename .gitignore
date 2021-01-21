@@ -6,4 +6,3 @@ deps/deps.jl
 docs/build/
 /dev/
 test/testdev.jl
-Manifest.toml
