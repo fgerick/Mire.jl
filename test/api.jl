@@ -9,6 +9,8 @@
     vs = [[x,y,z],ex,ey,ez]
     αs = [1//2,1,0,3]
     @test eigenvel(vs,αs) == [1//2*x+1,1//2*y,1//2*z+3]
+    @test geo_vel(0,1,1,1)[1] == [-y,x,0]
+
 end
 
 

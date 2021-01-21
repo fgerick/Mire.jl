@@ -1,104 +1,75 @@
 ### Functions to create matrices and assemble the full system.
 
-"""
-    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...) where {T, P <: Polynomial{T}}
+abstract type MireProblem{T,V} end
 
-DOCSTRING
 
-#Arguments:
-- `A`: pre-allocated array
-- `cmat`: pre-cached monomial integration values
-- `vs`: basis vectors
-- `N`: maximum monomial degree
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
-"""
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
-            N::Integer, forcefun::Function, args...) where {T, P <: Polynomial{T}}
-    projectforce!(A, cmat, vs, vs, forcefun, args...)
+
+mutable struct HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
+    N::Int
+    V::Vol
+    Ω::Vector{T}
+    vbasis::VectorBasis{T,Vol}
+    cmat::Array{T,3}
+    LHS::AbstractMatrix{T}
+    RHS::AbstractMatrix{T}
 end
 
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...) where {T, P <: Polynomial{T}}
-
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-    @assert n_1 == size(A,1)
-    @assert n_2 == size(A,2)
-
-    @inbounds for j=1:n_2
-        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-        for i=1:n_1
-            A[i,j] = Mire.inner_product_real(cmat,vs_i[i],f)
-        end
-    end
+mutable struct MHDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
+    N::Int
+    V::Vol
+    Ω::Vector{T}
+    B0::vptype{T}
+    vbasis::VectorBasis{T,Vol}
+    bbasis::VectorBasis{T,Vol}
+    cmat::Array{T,3}
+    LHS::AbstractMatrix{T}
+    RHS::AbstractMatrix{T}
 end
 
-
-"""
-    projectforce(N::Integer,cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-    forcefun::Function,a::T,b::T,c::T, args...) where {T, P <: Polynomial{T}}
-
-Allocates new matrix `A` and fills elements by calling
-projectforce!(A,cmat,vs_i,vs_j,forcefun, args...)
-
-where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
-
-#Arguments:
-- `N`: maximum monomial degree
-- `vs_i`: basis vectors to project on
-- `vs_j`: basis vectors used for `forcefun`
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
-"""
-function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-        forcefun::Function, args...) where {T, P <: Polynomial{T}}
-
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-
-    A = spzeros(T,n_1,n_2)
-
-    projectforce!(A, cmat, vs_i, vs_j, forcefun, args...)
-    return A
+function HDProblem(N::Int, V::Volume{T}, Ω::Vector{T}, ::Type{VB}) where {T <: Number, VB <: VectorBasis}
+    vbasis = VB(N,V)
+    cmat = cacheint(N,V)
+    n = length(vbasis.el)
+    LHS = spzeros(T,n,n)
+    RHS = spzeros(T,n,n)
+     
+    return HDProblem(N, V, Ω, vbasis, cmat, LHS, RHS)
 end
 
-projectforce(cmat::Array{T,3},vs::Array{Array{P,1},1},forcefun::Function, args...) where {T, P <: Polynomial{T}} = projectforce(cmat,vs,vs,forcefun,args...)
-
-
-"""
-    assemblehd(N::Int, a::T, b::T, c::T, Ω ; cmat = cacheint(N,a,b,c), vs = vel(N,a,b,c)) where T
-
-Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-left hand side `B` and basis vectors `vs`.
-
-#Arguments:
-- `N`: maximum monomial degree
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
-"""
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
-                    cmat = cacheint(N,a,b,c),
-                    vs = vel(N,a,b,c)) where T
-
-    A = projectforce(cmat,vs,inertial)
-    B = projectforce(cmat,vs,coriolis,Ω)
-    return A,B, vs
+function MHDProblem(N::Int, V::Volume{T}, Ω::Vector{T}, B0, ::Type{VB}, ::Type{BB}) where {T <: Number, VB <: VectorBasis, BB <: VectorBasis}
+    vbasis = VB(N,V)
+    bbasis = BB(N,V)
+    cmat = cacheint(N,V)
+    nu = length(vbasis.el)
+    nb = length(bbasis.el)
+    n = nu + nb
+    LHS = spzeros(T,n,n)
+    RHS = spzeros(T,n,n)
+     
+    return MHDProblem(N, V, Ω, vptype{T}(B0), vbasis, bbasis, cmat, LHS, RHS)
 end
 
 
-function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0)
+function assemble!(P::HDProblem{T,V}) where {T,V}
+    
+    projectforce!(P.LHS,P.cmat,P.vbasis.el,inertial)
+    projectforce!(P.RHS,P.cmat,P.vbasis.el,coriolis,P.Ω)
+
+    return nothing
+end
+
+
+function assemble!(P::MHDProblem{T,V}) where {T,V}
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
     nu = length(vbasis)
     nb = length(bbasis)
     nmat = nu+nb
-    projectforce!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial) #∂u/∂t
-    projectforce!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial) #∂j/∂t
-    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω) #Ω×u
-    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0) #j×b
-    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0)
+    projectforce!(view(P.LHS,1:nu,1:nu),P.cmat,vbasis,vbasis, inertial) #∂u/∂t
+    projectforce!(view(P.LHS,nu+1:nmat,nu+1:nmat),P.cmat,bbasis,bbasis, inertial) #∂j/∂t
+    projectforce!(view(P.RHS,1:nu,1:nu),P.cmat,vbasis,vbasis,coriolis,P.Ω) #Ω×u
+    projectforce!(view(P.RHS,1:nu,nu+1:nmat),P.cmat,vbasis,bbasis,lorentz,P.B0) #j×b
+    projectforce!(view(P.RHS,nu+1:nmat,1:nu),P.cmat,bbasis,vbasis,advection,P.B0)
     nothing
 end
 

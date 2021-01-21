@@ -93,9 +93,12 @@ function inner_product_real(cmat, u, v)
 end
 
 """
-Function to precalculate monomial integrations.
+    cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
+
+Function to precalculate monomial integrations in an ellipsoid (a,b,c). 
+NOTE: omits the factor π for convenience (has to be reintroduced if needed)
 """
-function cacheint(n::Int, a::T, b::T, c::T) where T
+function cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
     Nmax = 4n
     cachedmat = zeros(T,Nmax+1,Nmax+1,Nmax+1)
     @inbounds for i = 0:Nmax,j = 0:Nmax, k = 0:Nmax
@@ -104,40 +107,5 @@ function cacheint(n::Int, a::T, b::T, c::T) where T
     return cachedmat
 end
 
-#Quagmire integration
-
-
-# integrates ∫∫ x^i y^j sabc h^3 dsdϕ
-function int_monomial_ellipse(i::BigInt,j::BigInt,a::Real,b::Real,c::Real)
-    return ((3*(1+(-1)^i)*(1+(-1)^j)*a^(1+i)*b^(1+j)*c^3*√big(π)*gamma((1+i)/2)*gamma((1+j)/2))/(16*gamma((7+i+j)/2)))
-end
-
-function 𝒟(Π,a::T,b::T,c::T) where T
-    if Π == 0
-        return 0
-    else
-        cs = coefficients(Π)
-        exps = exponents.(monomial.(terms(Π)))
-        return sum([co*poly_inertial(nmpair...,a,b,c) for (nmpair,co) in zip(exps,cs)])
-    end
-end
-
-function inner_product_2D(cmat,u,v,a::T,b::T,c::T) where T
-    duv = u*𝒟(v,a,b,c)
-    ip = zero(eltype(cmat))
-    cs = coefficients(duv)
-    exps = exponents.(monomials(duv))
-    @inbounds for i=1:length(cs)
-        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-    end
-    return ip
-end
-
-function cacheint2D(n::Int,a::T,b::T,c::T) where T
-    Nmax = 4n
-    cmat = zeros(T,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax
-        cmat[i+1,j+1] = int_monomial_ellipse(big(i),big(j),a,b,c)
-    end
-    return cmat
-end
+cacheint(n::Int, V::Ellipsoid{T}) where T = cacheintellipsoid(n,V.a,V.b,V.c)
+cacheint(n::Int, V::Sphere{T}) where T = cacheintellipsoid(n,one(T),one(T),one(T))

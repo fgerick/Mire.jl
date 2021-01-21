@@ -1,10 +1,12 @@
 
 
-@testset "QG Inertial modes" begin
-    a,b,c=1.,1.,1.
-    Ω = [0,0,1]
+@testset "Columnar 3D inertial modes" begin
+    # a,b,c=1.,1.,1.
+    Ω = [0,0,1.0]
     N = 3
-    B,A, uj = assemblehd(N, a, b, c, Ω)
+    prob = HDProblem(N,Sphere(), Ω, LebovitzBasis)
+    assemble!(prob)
+    A,B = prob.RHS,prob.LHS
     esol = eigen(inv(Matrix(B))*A)
     ω = esol.values
 
@@ -14,13 +16,14 @@
     @test any(esol.values.≈zhang(2,1))
 end
 
-@testset "QG Malkus modes" begin
-    a,b,c=1.,1.,1.
-    Le=1e-6
+@testset "Columnar 3D Malkus modes" begin
+    Le = 1e-6
     Ω = [0,0,1/Le]
     N = 3
     b0 = [-y,x,0]
-    B,A, uj = assemblemhd(N, a, b, c, Ω,b0)
+    prob = MHDProblem(N, Sphere(), Ω, b0, LebovitzBasis, ConductingMFBasis)
+    assemble!(prob)
+    A,B = prob.RHS,prob.LHS
     esol = eigen(inv(Matrix(B))*A)
     ω = esol.values
 
@@ -37,18 +40,36 @@ end
     @test any(isapprox.(esol.values,fast(2,1,Le),atol=1e-9))
 end
 
-@testset "QG from scalar vs QG 3D projection" begin
-    N,a,b,c,Le = 5,1.25,0.8,1.0,1e-5
-    Ω = 1/Le
-    A0 = (x^0*y^0 + x)/3
-    b0 = (Mire.qg_vel(0,0,a,b,c) + Mire.qg_vel(1,0,a,b,c))/3
+@testset "Spheroidal QG inertial modes" begin
+    a,b = 1.0, 1.1
+    Ω = [0,0,1.0]
+    N = 9
+    prob = HDProblem(N, Ellipsoid(a,a,b), Ω, QGBasis)
+    assemble!(prob)
+    A,B = prob.RHS,prob.LHS
+    esol = eigen(inv(Matrix(B))*A)
+    ω = esol.values
 
-    LHS,RHS,vsqg=Mire.assemblemhd_quag(N,a,b,c,Ω,A0)
-    LHS2,RHS2,vsqg2 = Mire.assemblemhd_qg(N,a,b,c,[0,0,Ω],b0)
+    # Maffei et al. 2017, Proc. R. Soc. A 473: 20170181. http://dx.doi.org/10.1098/rspa.2017.0181 eq. (4.11)
 
-    s1 = eigen(Matrix(RHS),Matrix(LHS))
-    s2 = eigen(Matrix(RHS2),Matrix(LHS2))
-
-    @test sort(abs.(s1.values),rev=true) ≈ sort(abs.(s2.values),rev=true)
-
+    maffei(m,N,b)= -m/(N*(2N + 2m + 1) + m/2 + m^2*b^2/6)*im
+    for m in 1:3, N in 1:3
+        @test any(esol.values.≈maffei(m,N,b)) 
+    end
 end
+
+# @testset "QG from scalar vs QG 3D projection" begin
+#     N,a,b,c,Le = 5,1.25,0.8,1.0,1e-5
+#     Ω = 1/Le
+#     A0 = (x^0*y^0 + x)/3
+#     b0 = (Mire.qg_vel(0,0,a,b,c) + Mire.qg_vel(1,0,a,b,c))/3
+
+#     LHS,RHS,vsqg=Mire.assemblemhd_quag(N,a,b,c,Ω,A0)
+#     LHS2,RHS2,vsqg2 = Mire.assemblemhd_qg(N,a,b,c,[0,0,Ω],b0)
+
+#     s1 = eigen(Matrix(RHS),Matrix(LHS))
+#     s2 = eigen(Matrix(RHS2),Matrix(LHS2))
+
+#     @test sort(abs.(s1.values),rev=true) ≈ sort(abs.(s2.values),rev=true)
+
+# end
