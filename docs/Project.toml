@@ -1,7 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Mire =  "fe462080-2232-11e9-3a2e-c30dbf578c75"
-CartesianSphericalHarmonics = "76434f01-525d-4cbb-bcb9-3cdf14f74cfc"
 
 [compat]
 Documenter = "~0.23"
