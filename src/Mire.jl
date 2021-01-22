@@ -31,7 +31,6 @@ include("integration.jl")
 export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint, cacheint_surface_torque
 
 
-
 # Calculus definitions
 ∂ = differentiate
 gradient(ψ) = [∂.(ψ,(x,y,z))...]
@@ -87,6 +86,7 @@ end
 
 
 
-
+#2D reduced set, submodule
+include("quagmire.jl")
 
 end #module
