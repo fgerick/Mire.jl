@@ -58,6 +58,23 @@ end
     end
 end
 
+@testset "λ₁₂ ellipsoidal inertial mode" begin
+    a,b,c = 1.2,1.1,0.7
+    Ω = [0,0,1.0]
+    N = 5
+    prob = HDProblem(N, Ellipsoid(a,b,c), Ω, LebovitzBasis)
+    assemble!(prob)
+    A,B = prob.RHS,prob.LHS
+    esol = eigen(inv(Matrix(B))*A)
+    ω = esol.values
+
+    # Vantieghem 2014, Proc. R. Soc. A 470: 20140093. http://dx.doi.org/10.1098/rspa.2014.0093 eq. (3.21)
+    vantieghem(a,b,c)= 2a*b/sqrt((a^2+c^2)*(b^2+c^2))*im
+
+    @test any(esol.values.≈vantieghem(a,b,c))
+    @test any(esol.values.≈-vantieghem(a,b,c))  
+end
+
 # @testset "QG from scalar vs QG 3D projection" begin
 #     N,a,b,c,Le = 5,1.25,0.8,1.0,1e-5
 #     Ω = 1/Le
