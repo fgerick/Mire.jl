@@ -3,7 +3,20 @@
 abstract type MireProblem{T,V} end
 
 
+"""
+    HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
 
+Defines hydrodynamic problem.
+
+Example:
+
+```
+N = 5
+Ω = [0,0,1.0]
+V = Ellipsoid(1.1,1.0,0.9)
+problem = HDProblem(N,V,Ω,LebovitzBasis)
+```
+"""
 mutable struct HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
     N::Int
     V::Vol
@@ -14,6 +27,23 @@ mutable struct HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
     RHS::AbstractMatrix{T}
 end
 
+"""
+    MHDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
+
+Defines magnetohydrodynamic problem.
+
+Example for a hybrid QG model with 3-D magnetic field with 
+conducting boundary condition and QG velocities:
+
+```
+N = 5
+Ω = [0,0,1.0]
+a,b,c = 1.1,1.0,0.9
+V = Ellipsoid(a,b,c)
+B0 = [-y/b^2,x/a^2,0] #Malkus field
+problem = MHDProblem(N,V,Ω,B0,QGBasis,ConductingMFBasis)
+```
+"""
 mutable struct MHDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
     N::Int
     V::Vol
@@ -63,7 +93,12 @@ function MHDProblem(
     return MHDProblem(N, V, Ω, vptype{T}(B0), vbasis, bbasis, cmat, LHS, RHS)
 end
 
+"""
+    assemble!(P::HDProblem{T,V}) where {T,V}
 
+Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
+`P.vbasis` on the inertial acceleration and Coriolis force.
+"""
 function assemble!(P::HDProblem{T,V}) where {T,V}
 
     projectforce!(P.LHS, P.cmat, P.vbasis.el, inertial)
@@ -72,7 +107,13 @@ function assemble!(P::HDProblem{T,V}) where {T,V}
     return nothing
 end
 
+"""
+    assemble!(P::MHDProblem{T,V}) where {T,V}
 
+Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity and
+magnetic field bases on the inertial acceleration, Coriolis force, Lorentz force
+and mgnetic advection.
+"""
 function assemble!(P::MHDProblem{T,V}) where {T,V}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el

@@ -153,7 +153,13 @@ function inner_product!(
     return out
 end
 
-#threaded and cached polynomials version of the force projection function
+#threaded and cached polynomials version of the force projection functioN
+"""
+    projectforcet!(A::AbstractArray{T,2}, cmat::Array{T,3}, vs_i::Array{Array{P,1},1}, vs_j::Array{Array{P,1},1}, forcefun::Function, args...; n_cache = 10^6) where {T, P <: Polynomial{T}}
+
+Multithreaded projection using pre-cached polynomial terms array. `n_cache` needs to be sufficiently large for a given
+polynomial degree of the basis vectors (trial and error for now!).
+"""
 function projectforcet!(
     A::AbstractArray{T,2},
     cmat::Array{T,3},

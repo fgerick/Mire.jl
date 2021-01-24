@@ -1,28 +1,65 @@
+"""
+    Volume{T}
 
-abstract type VectorBasis{T,V} end
+Defines `abstract type` of the volume.
+"""
 abstract type Volume{T} end
 
 ptype{T} = Polynomial{T,Term{T,Monomial{(x, y, z),3}},Array{Term{T,Monomial{(x, y, z),3}},1}}
 vptype{T} = Vector{ptype{T}}
 
+"""
+    Ellipsoid{T<:Number} <: Volume{T}
+
+`Volume` type `Ellipsoid`. Create by calling `Ellipsoid(a,b,c)`, with `a,b,c` the semi-axes.
+`a,b,c` can be of any `Number` type. 
+
+Examples:
+`Ellipsoid(1.1,1.0,0.9)` is a `Ellipsoid{Float64}`,
+`Ellipsoid(1//1,1//2,1//5)` is a `Ellispoid{Rational{Int64}}`.
+"""
 struct Ellipsoid{T<:Number} <: Volume{T}
     a::T
     b::T
     c::T
 end
 
+"""
+    Sphere{T<:Number} <: Volume{T}
+
+`Volume` type `Sphere`. Create by calling `Sphere{T}()`, with `T` any `Number` type.
+Default: `Sphere(T)` gives a `Sphere{Float64}()`. For other types use, e.g.
+`Sphere{Rational{BigInt}}()`.
+"""
 struct Sphere{T<:Number} <: Volume{T} end
 
 Sphere() = Sphere{Float64}()
 Ellipsoid(a, b, c) = Ellipsoid(promote(a, b, c)...)
 Ellipsoid(a::Int, b::Int, c::Int) = Ellipsoid(a // 1, b // 1, c // 1)
 
+"""
+    VectorBasis{T,V}
+
+Defines `abstract type` of a vector basis to for a `T,V` so that `V=Volume{T}`.
+"""
+abstract type VectorBasis{T,V} end
+
+"""
+    LebovitzBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+
+Basis of 3-D vector field, so that \$\\mathbf{u}\\cdot\\vec{n} = 0\$ at \$\\partial\\mathcal{V}\$
+and \$\\nabla\\cdot\\mathbf{u} = 0\$ after Lebovitz (1989).
+"""
 struct LebovitzBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
     el::Vector{vptype{T}}
 end
+"""
+    QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 
+Basis of QG vector field (Gerick et al., 2020).
+"""
 struct QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
@@ -31,6 +68,11 @@ end
 
 const ConductingMFBasis = LebovitzBasis
 
+"""
+InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+
+Basis of insulating magnetic fields. For now only for `Vol<:Sphere{T}`!
+"""
 struct InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol

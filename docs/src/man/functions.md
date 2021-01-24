@@ -3,24 +3,36 @@
 ```@meta
 CurrentModule = Mire
 ```
-
-## Setting up the eigen problem
-
-TODO: Description how to set up the problem here.
+## Defining the Volume
 
 ```@docs
-assemblehd
+Ellipsoid
 ```
 
 ```@docs
-assemblemhd
+Sphere
+```
 
+## Vector bases
+
+```@docs
+LebovitzBasis
+```
+
+## Setting up the problem
+
+```@docs
+HDProblem
 ```
 
 ```@docs
-assemblemhd_hybrid
-
+MHDProblem
 ```
+
+```@docs
+assemble!
+```
+
 
 ## Low level functions
 
@@ -35,28 +47,13 @@ projectforce!
 ```
 
 ```@docs
-vel
-```
-
-```@docs
-eigenvel
-```
-
-```@docs
-int_ellipsoid_surface
-```
-
-```@docs
-int_monomial_ellipsoid
-```
-
-```@docs
-int_polynomial_ellipsoid
+projectforcet!
 ```
 
 ```@docs
 inner_product
 ```
+
 ```@docs
-qg_vel
+uqg
 ```
