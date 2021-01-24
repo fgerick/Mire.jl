@@ -29,6 +29,10 @@ end
 
     # Zhang et al., J. Fluid Mech. (2001), vol. 437, pp. 103–119, eq. (4.5)
     zhang(m,N)=-2/(m+2)*(√(1+m*(m+2)/(N*(2N+2m+1)))-1)*im
+    # note: for larger m,N this approximate formula is inaccurate, and the comparison will fail
+    # For the exact values of the inertial mode frequencies the roots of the univariate polynomials
+    # given in (2.15/2.16) should be used as a comparison to this code.
+
 
     # Malkus J. Fluid Mech. (1967), vol. 28, pp. 793-802, eq. (2.28)
     slow(m, N, Le, λ = imag(zhang(m,N))) = im*λ/2Le*(1 - √(1+4Le^2*m*(m-λ)/λ^2))
