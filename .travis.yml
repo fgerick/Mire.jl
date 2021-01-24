@@ -17,8 +17,7 @@ jobs:
           - linux
           - osx
       script:
-        - julia --project=docs/ -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl")); 
-                                Pkg.develop(PackageSpec(path=pwd()));
+        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
                                                Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
