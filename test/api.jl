@@ -71,3 +71,25 @@ end
 
 end
 
+@testset "Projection functions" begin
+
+    N = 7
+    V = Ellipsoid(1.1,1.0,0.9)
+
+    vbasis = LebovitzBasis(N,V).el
+    nu = length(vbasis)
+    A = spzeros(nu,nu)
+    cmat = cacheint(N,V)
+
+    projectforce!(A,cmat,vbasis,vbasis,inertial)
+    B = projectforce(cmat,vbasis,vbasis,inertial)
+
+    @test A ≈ B
+
+    C = zeros(nu,nu)
+    Mire.projectforcet!(C,cmat,vbasis,vbasis,inertial)
+
+    @test B ≈ sparse(C)
+
+    
+end

@@ -116,7 +116,7 @@ function _mul_to_terms!(
     i = iter #number of used terms from preallocated terms-vector p
     @inbounds for ti in t1
         for tj in t2
-            p[iter] = ti*tj
+            p[iter] = conj(coefficient(ti))*monomial(ti)*tj
             iter += 1
         end
     end
@@ -131,7 +131,7 @@ function dotpp!(
 
     k=1
     @inbounds for i in 1:3
-        k = _mul_to_terms!(k, p, conj(u[i]), v[i])
+        k = _mul_to_terms!(k, p, u[i], v[i])
     end
     return k-1
 end
@@ -155,13 +155,13 @@ end
 
 #threaded and cached polynomials version of the force projection functioN
 """
-    projectforcet!(A::AbstractArray{T,2}, cmat::Array{T,3}, vs_i::Array{Array{P,1},1}, vs_j::Array{Array{P,1},1}, forcefun::Function, args...; n_cache = 10^6) where {T, P <: Polynomial{T}}
+    projectforcet!(A::Array{T,2}, cmat::Array{T,3}, vs_i::Array{Array{P,1},1}, vs_j::Array{Array{P,1},1}, forcefun::Function, args...; n_cache = 10^6) where {T, P <: Polynomial{T}}
 
 Multithreaded projection using pre-cached polynomial terms array. `n_cache` needs to be sufficiently large for a given
-polynomial degree of the basis vectors (trial and error for now!).
+polynomial degree of the basis vectors (trial and error for now!). Matrix `A` must be dense due to thread safety.
 """
 function projectforcet!(
-    A::AbstractArray{T,2},
+    A::Array{T,2},
     cmat::Array{T,3},
     vs_i::Array{Array{P,1},1},
     vs_j::Array{Array{P,1},1},
