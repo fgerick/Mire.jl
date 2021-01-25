@@ -1,4 +1,4 @@
-using Test, LinearAlgebra, Mire
+using Test, LinearAlgebra, SparseArrays, Mire
 
 include("api.jl")
 include("modes.jl")
