@@ -22,8 +22,8 @@ end
     p = x^2+1
     @test int_polynomial_ellipsoid(p,a,b,c) == 4/3*a*b*c + 4/3*a*b*c*(a^2*1/5)
 
-    u = [x^2,im*y,z]
-    v = [z^0,x,y]
+    u = Mire.ptype{ComplexF64}[x^2,im*y,z]
+    v = Mire.ptype{ComplexF64}[z^0,x,y]
     @test Mire.inner_product(cmat,u,v) == Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
     @test Mire.inner_product_real(cmat,v,v) == Mire.inner_product(v,v,a,b,c) ≈ 4/3*a*b*c*(1+a^2*1/5+b^2*1/5)
 

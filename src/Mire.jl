@@ -19,7 +19,7 @@ const z = TypedPolynomials.Variable{:z}()
 # different bases functions
 
 include("bases.jl")
-export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis, InsulatingMFBasis
+export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis, InsulatingMFBasis, QGIMBasis
 
 include("assemble.jl")
 export MireProblem, HDProblem, MHDProblem
@@ -36,7 +36,7 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 struct ∇; end
 
 ∂ = differentiate
-∇(ψ) = [∂.(ψ,(x,y,z))...]
+∇(ψ::T) where T = [∂.(ψ,(x,y,z))...]
 
 import LinearAlgebra: dot, (×)
 

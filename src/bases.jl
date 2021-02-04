@@ -66,6 +66,12 @@ struct QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     el::Vector{vptype{T}}
 end
 
+struct QGIMBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{Complex{T}}}
+end
+
 const ConductingMFBasis = LebovitzBasis
 
 """
@@ -78,6 +84,14 @@ struct InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     V::Vol
     el::Vector{vptype{T}}
 end
+
+struct GBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+end
+
+
 
 ### Lebovitz (1989) basis
 
@@ -141,11 +155,11 @@ function uqg(n::Integer, m::Integer, V::Volume{T}) where {T}
     else
         error("QG velocity not implemented for this Volume")
     end
-
+    Π = one(T) * x^n * y^m * z^0
     h2 = c^2 * (1 - x^2 / a^2 - y^2 / b^2)
-    ez = [0, 0, 1]
-    hgradh = [-c^2 * x / a^2, -c^2 * y / b^2, 0]
-    return h2 * ∇(x^n * y^m) × ez + 3 * x^n * y^m * hgradh × ez - z * ∇(x^n * y^m) × hgradh
+    ez = Mire.ez #[zero(Π),zero(Π),one(Π)]
+    h∇h = [-c^2 * x / a^2, -c^2 * y / b^2, 0]
+    return h2 * ∇(Π) × ez + 3 * Π * h∇h × ez - z * ∇(Π) × h∇h
 end
 
 
@@ -154,6 +168,90 @@ function basisvectors(::Type{QGBasis}, N::Int, V::Volume{T}) where {T}
     return [uqg(ci..., V) for ci in cs]
 end
 
+#QG inertial mode basis
+CSR=CartesianSphericalHarmonics
+
+function jacobi(x, n::Integer, a::R, b::R) where R <: Number
+    ox = one(x*a*n)
+    zx = zero(x*a*n)
+    if n==0
+        return ox
+    elseif n==1
+        return ox*1//2 * (a - b + (a + b + 2)*x)
+    end
+
+    p0 = ox
+    p1 = ox*1//2 * (a - b + (a + b + 2)*x)
+    p2 = zx;
+
+    for i = 1:(n-1)
+		a1 = 2*(i+1)*(i+a+b+1)*(2*i+a+b)
+		a2 = (2*i+a+b+1)*(a*a-b*b);
+		a3 = (2*i+a+b)*(2*i+a+b+1)*(2*i+a+b+2);
+		a4 = 2*(i+a)*(i+b)*(2*i+a+b+2);
+		p2 = ox/a1 * ( (a2 + a3*x)*p1 - a4*p0);
+
+        p0 = p1
+        p1 = p2
+    end
+
+    return p2
+end
+
+r2 = x^2 + y^2 + z^2
+
+
+# function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
+#     h2 = 1-x^2-y^2
+#     ez = [0,0,1]
+#     hgradh = [-x,-y,0]
+#     s2 = x^2 + y^2
+#     # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+# 	ψp = jacobi(2s2-1,n,T(3//2), T(m))* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+
+#     return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
+# end
+
+function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
+    h2 = one(T)-x^2-y^2
+    ez = [0,0,1]
+    hgradh = [-x,-y,0]
+    s2 = x^2 + y^2
+    # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+	ψp =  jacobi(2s2-1,n,T(3//2), T(m) ) * (im*CSR.sinsinpoly(m,x,y) + CSR.cossinpoly(m,x,y))
+	# ψp = ψp(x=>x/a,y=>y/b)
+    return h2*∇(ψp)×ez + 3*ψp*hgradh×ez - z*∇(ψp)×hgradh
+end
+
+
+# qg_basis(N,V) = [basiselement(n,m,V) for m=-N:N for n=0:(N-abs(m))÷2]
+
+function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
+    return [basiselementc(n,m,V) for m=0:N for n=0:(N-abs(m))÷2]
+end
+
+## Geostrophic basis
+
+
+function geo_veln(n::Integer,V::Volume{T}) where T
+
+    if typeof(V) <: Sphere
+        a, b, c = one(T), one(T), one(T)
+    elseif typeof(V) <: Ellipsoid
+        a, b, c = V.a, V.b, V.c
+    else
+        error("Geostrophic velocity not implemented for this Volume")
+    end 
+
+    h2 = c^2*(1-x^2/a^2-y^2/b^2)
+    ez = [0,0,1]
+    hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
+    return (3+2n)//3*h2^n*z^0 * hgradh×ez
+end
+
+function basisvectors(::Type{GBasis}, N::Int, V::Volume{T}) where T
+    return [geo_veln(n,V) for n in 0:N÷2]
+end
 
 ## Insulating 3-D magnetic field basis in the sphere (Gerick et al., 2021)
 
@@ -239,7 +337,7 @@ end
 
 
 # Generate constructors for each defined basis
-for Basis in (:LebovitzBasis, :QGBasis, :InsulatingMFBasis)
+for Basis in (:LebovitzBasis, :QGBasis, :InsulatingMFBasis, :GBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =

@@ -18,35 +18,36 @@ function projectforce!(
     cmat::Array{T,3},
     vs::Array{Array{P,1},1}, 
     forcefun::Function, 
-    args...
+    args...;
+    kwargs...
     ) where {T, P <: Polynomial{T}}
 
-    return projectforce!(A, cmat, vs, vs, forcefun, args...)
+    return projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
 end
 
-function projectforce!(
-    A::AbstractArray{T,2},
-    cmat::Array{T,3},
-    vs_i::Array{Array{P,1},1},
-    vs_j::Array{Array{P,1},1},
-    forcefun::Function,
-    args...
-    ) where {T, P <: Polynomial{T}}
+# function projectforce!(
+#     A::AbstractArray{T,2},
+#     cmat::Array{T,3},
+#     vs_i::Array{Array{P,1},1},
+#     vs_j::Array{Array{P,1},1},
+#     forcefun::Function,
+#     args...
+#     ) where {T, P <: Polynomial{T}}
 
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-    @assert n_1 == size(A,1)
-    @assert n_2 == size(A,2)
+#     n_1 = length(vs_i)
+#     n_2 = length(vs_j)
+#     @assert n_1 == size(A,1)
+#     @assert n_2 == size(A,2)
 
-    @inbounds for j=1:n_2
-        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-        for i=1:n_1
-            A[i,j] = inner_product_real(cmat,vs_i[i],f)
-        end
-    end
+#     @inbounds for j=1:n_2
+#         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+#         for i=1:n_1
+#             A[i,j] = inner_product_real(cmat,vs_i[i],f)
+#         end
+#     end
 
-    return nothing
-end
+#     return nothing
+# end
 
 
 """
@@ -69,7 +70,8 @@ function projectforce(
     vs_i::Array{Array{P,1},1},
     vs_j::Array{Array{P,1},1},
     forcefun::Function, 
-    args...
+    args...;
+    kwargs...
     ) where {T, P <: Polynomial{T}}
 
     n_1 = length(vs_i)
@@ -77,7 +79,7 @@ function projectforce(
 
     A = spzeros(T,n_1,n_2)
 
-    projectforce!(A, cmat, vs_i, vs_j, forcefun, args...)
+    projectforce!(A, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
 
     return A
 end
@@ -86,10 +88,11 @@ function projectforce(
     cmat::Array{T,3},
     vs::Array{Array{P,1},1},
     forcefun::Function, 
-    args...
+    args...;
+    kwargs...
     ) where {T, P <: Polynomial{T}}
 
-    return projectforce(cmat,vs,vs,forcefun,args...)
+    return projectforce(cmat,vs,vs,forcefun,args...; kwargs...)
 end
 
 
@@ -160,8 +163,35 @@ end
 Multithreaded projection using pre-cached polynomial terms array. `n_cache` needs to be sufficiently large for a given
 polynomial degree of the basis vectors (trial and error for now!). Matrix `A` must be dense due to thread safety.
 """
+# function projectforcet!(
+#     A::AbstractArray{T,2},
+#     cmat::Array{T,3},
+#     vs_i::Array{Array{P,1},1},
+#     vs_j::Array{Array{P,1},1},
+#     forcefun::Function, 
+#     args...; 
+#     n_cache = 10^6
+#     ) where {T, P <: Polynomial{T}}
+
+#     n_1 = length(vs_i)
+#     n_2 = length(vs_j)
+#     @assert n_1 == size(A,1)
+#     @assert n_2 == size(A,2)
+# 	# p = Progress(n_1*n_2)
+
+#     @sync for j = 1:n_2
+#         Threads.@spawn begin
+#            ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) #cache terms array.
+#             f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+#             for i = 1:n_1
+#                 A[i,j] =  inner_product!(ptemp, vs_i[i], f, cmat)
+#             end
+#         end
+#     end
+# end
+
 function projectforcet!(
-    A::Array{T,2},
+    A::AbstractArray{T,2},
     cmat::Array{T,3},
     vs_i::Array{Array{P,1},1},
     vs_j::Array{Array{P,1},1},
@@ -174,15 +204,76 @@ function projectforcet!(
     n_2 = length(vs_j)
     @assert n_1 == size(A,1)
     @assert n_2 == size(A,2)
-	# p = Progress(n_1*n_2)
+    # p = Progress(n_1*n_2)
+    nt = Threads.nthreads()
+    ptemps = [zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
+    # ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
+    # Threads.@threads 
+    Threads.@threads for j = 1:n_2
+        #    ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) #cache terms array.
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        for i = 1:n_1
+            A[i,j] =  inner_product!(ptemps[Threads.threadid()], vs_i[i], f, cmat)
+        end
+    end
+end
 
-    @sync for j = 1:n_2
-        Threads.@spawn begin
-           ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) #cache terms array.
-            f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-            for i = 1:n_1
-                A[i,j] =  inner_product!(ptemp, vs_i[i], f, cmat)
+
+function projectforce!(
+    A::AbstractArray{T,2},
+    cmat::Array{T,3},
+    vs_i::Array{Array{P,1},1},
+    vs_j::Array{Array{P,1},1},
+    forcefun::Function, 
+    args...; 
+    n_cache = 10^6
+    ) where {T, P <: Polynomial{T}}
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    @assert n_1 == size(A,1)
+    @assert n_2 == size(A,2)
+    nt = Threads.nthreads()
+    ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
+    @inbounds for j = 1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        for i = 1:n_1
+            A[i,j] =  inner_product!(ptemp, vs_i[i], f, cmat)
+        end
+    end
+end
+
+function projectforcet_symmetric_neighbours!(
+    A::AbstractArray{T,2},
+    cmat::Array{T,3},
+    vs_i::Array{Array{P,1},1},
+    vs_j::Array{Array{P,1},1},
+    forcefun::Function, 
+    ls::Vector{Int},
+    ms::Vector{Int},
+    ispt::Vector{Bool}, 
+    args...; 
+    n_cache=2*10^6) where {T, P <: Polynomial{T}}
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    @assert n_1 == size(A,1)
+    @assert n_2 == size(A,2)
+    # ptemp = zeros(Term{T,Monomial{(x, y, z),3}},n_cache);
+    nt = Threads.nthreads()
+    ptemps = [zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
+
+    Threads.@threads for j=1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        for i = j:n_1
+            if (ls[i]==ls[j]) && (ms[i]==ms[j]) && (ispt[i]==ispt[j])
+                A_ij =  inner_product!(ptemps[Threads.threadid()], vs_i[i], f, cmat)
+                A[i,j] = A_ij
+                if i!=j
+                    A[j,i] = A_ij
+                end
             end
+
         end
     end
 end

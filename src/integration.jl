@@ -69,7 +69,7 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
 
 
-dotp(u,v) = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
+dotp(u::vptype{T},v::vptype{T}) where T = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
 
 """
     inner_product(cmat, u, v; thresh=eps())
@@ -87,7 +87,7 @@ function inner_product(cmat, u, v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
 
-function inner_product_real(cmat, u, v)
+function inner_product_real(cmat::Array{T1,3}, u::vptype{T}, v::vptype{T}) where {T,T1}
     duv = dotp(u,v)
     return int_polynomial_ellipsoid(duv,cmat)
 end
