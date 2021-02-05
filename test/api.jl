@@ -58,7 +58,7 @@ end
     
     jn_at_surface = normalmax.(j)
 
-    @test all( isapprox.(jn_at_surface,0, atol=1e-14))
+    @test all( isapprox.(jn_at_surface,0, atol=1e-13))
 
     #test LMN function
     ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
