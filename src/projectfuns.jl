@@ -191,14 +191,14 @@ polynomial degree of the basis vectors (trial and error for now!). Matrix `A` mu
 # end
 
 function projectforcet!(
-    A::AbstractArray{T,2},
+    A::AbstractMatrix{T},
     cmat::Array{T,3},
-    vs_i::Array{Array{P,1},1},
-    vs_j::Array{Array{P,1},1},
+    vs_i::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
     forcefun::Function, 
     args...; 
     n_cache = 10^6
-    ) where {T, P <: Polynomial{T}}
+    ) where {T, T2}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -220,14 +220,14 @@ end
 
 
 function projectforce!(
-    A::AbstractArray{T,2},
+    A::AbstractMatrix{T},
     cmat::Array{T,3},
-    vs_i::Array{Array{P,1},1},
-    vs_j::Array{Array{P,1},1},
+    vs_i::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
     forcefun::Function, 
     args...; 
     n_cache = 10^6
-    ) where {T, P <: Polynomial{T}}
+    ) where {T, T2}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
@@ -244,16 +244,16 @@ function projectforce!(
 end
 
 function projectforcet_symmetric_neighbours!(
-    A::AbstractArray{T,2},
+    A::AbstractMatrix{T},
     cmat::Array{T,3},
-    vs_i::Array{Array{P,1},1},
-    vs_j::Array{Array{P,1},1},
+    vs_i::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
     forcefun::Function, 
     ls::Vector{Int},
     ms::Vector{Int},
     ispt::Vector{Bool}, 
     args...; 
-    n_cache=2*10^6) where {T, P <: Polynomial{T}}
+    n_cache=2*10^6) where {T, T2}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)

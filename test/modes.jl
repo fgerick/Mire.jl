@@ -18,10 +18,10 @@ end
 
 @testset "Columnar 3D Malkus modes" begin
     Le = 1e-6
-    Ω = [0,0,1/Le]
+    Ω = [0,0,1.0]
     N = 3
     b0 = [-y,x,0]
-    prob = MHDProblem(N, Sphere(), Ω, b0, LebovitzBasis, ConductingMFBasis)
+    prob = MHDProblem(N, Sphere(), Ω, Le, b0, LebovitzBasis, ConductingMFBasis)
     assemble!(prob)
     A,B = prob.RHS,prob.LHS
     esol = eigen(inv(Matrix(B))*A)
@@ -86,7 +86,7 @@ end
     V = Ellipsoid(a,b,c)
     b0 = (Mire.uqg(0,0,V) + Mire.uqg(1,0,V))/3
 
-    prob = MHDProblem(N, V, Ω, b0, QGBasis, QGBasis)
+    prob = MHDProblem(N, V, Ω, Le, b0, QGBasis, QGBasis)
     assemble!(prob)
     RHS,LHS = prob.RHS,prob.LHS 
 
