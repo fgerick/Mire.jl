@@ -168,15 +168,15 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
         end
 
         projectforcet!(view(RHST, 1:nu, 1:nu), cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-        println("assemble Ω×u done!")
+        println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
         projectforcet!(view(RHST, 1:nu, nu+1:nmat), cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
-        println("assemble j×B done!")
+        println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
         projectforcet!(view(RHST, nu+1:nmat, 1:nu), cmat, bbasis, vbasis, advection, P.B0; kwargs...)
-        println("assemble ∇×u×B₀ done!")
+        println("assemble ∫ uᵢ⋅∇×uⱼ×B₀ done!")
 
         if !isinf(P.Lu)
             projectforcet!(view(RHST, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
-            println("assemble 1/Lu ΔB² done!")
+            println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
 
         P.RHS = sparse(RHST)

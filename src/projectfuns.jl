@@ -197,14 +197,17 @@ function projectforcet!(
     vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
     forcefun::Function, 
     args...; 
-    n_cache = 10^6
+    n_cache = 10^6,
+    verbose = false
     ) where {T, T2}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
     @assert n_1 == size(A,1)
     @assert n_2 == size(A,2)
-    # p = Progress(n_1*n_2)
+    if verbose
+        p = Progress(n_1*n_2)
+    end
     nt = Threads.nthreads()
     ptemps = [zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
     # ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
@@ -214,6 +217,9 @@ function projectforcet!(
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         for i = 1:n_1
             A[i,j] =  inner_product!(ptemps[Threads.threadid()], vs_i[i], f, cmat)
+            if verbose
+                next!(p)
+            end
         end
     end
 end
@@ -226,7 +232,8 @@ function projectforce!(
     vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
     forcefun::Function, 
     args...; 
-    n_cache = 10^6
+    n_cache = 10^6,
+    verbose = false
     ) where {T, T2}
 
     n_1 = length(vs_i)
@@ -235,10 +242,16 @@ function projectforce!(
     @assert n_2 == size(A,2)
     nt = Threads.nthreads()
     ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
+    if verbose
+        p = Progress(n_1*n_2)
+    end
     @inbounds for j = 1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         for i = 1:n_1
             A[i,j] =  inner_product!(ptemp, vs_i[i], f, cmat)
+            if verbose
+                next!(p)
+            end
         end
     end
 end
@@ -253,7 +266,9 @@ function projectforcet_symmetric_neighbours!(
     ms::Vector{Int},
     ispt::Vector{Bool}, 
     args...; 
-    n_cache=2*10^6) where {T, T2}
+    n_cache = 2*10^6,
+    verbose = false
+    ) where {T, T2}
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)

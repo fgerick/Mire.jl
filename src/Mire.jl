@@ -3,6 +3,7 @@ module Mire
 using CartesianSphericalHarmonics
 using LinearAlgebra
 using MultivariatePolynomials
+using ProgressMeter
 using SparseArrays
 using SpecialFunctions
 using TypedPolynomials
@@ -19,7 +20,7 @@ const z = TypedPolynomials.Variable{:z}()
 # different bases functions
 
 include("bases.jl")
-export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis, InsulatingMFBasis, QGIMBasis, InsMFCBasis
+export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis, InsulatingMFBasis, QGIMBasis, InsMFCBasis, InsMFONBasis
 
 include("assemble.jl")
 export MireProblem, HDProblem, MHDProblem

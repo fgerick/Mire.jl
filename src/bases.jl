@@ -96,6 +96,13 @@ struct InsMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     orthonorm::Bool
 end
 
+struct InsMFONBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
 struct GBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
@@ -426,6 +433,62 @@ function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
 end
 
 
+h(::Type{T},l::Integer,n::Integer) where T = (one(T)-r2)*jacobi(2r2-1, n-1, T(2), T(l + 1//2))
+
+function k(::Type{T},l::Integer,n::Integer) where T
+	c₀ = T(-2n^2*(l + 1) - n*(l + 1)*(2l - 1) - l*(2l + 1))
+	c₁ = T(2*(l + 1)*n^2 + (2l + 3)*(l + 1)*n + (2l + 1)^2)
+	c₂ = T(4n*l + l*(2l+1))
+	P0 = jacobi(2r2-1, n, zero(T), T(l + 1//2))
+	P1 = jacobi(2r2-1, n-1, zero(T), T(l + 1//2))
+	return c₀*P0+c₁*P1+c₂
+end
+
+btor(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*[x,y,z])
+bpol(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(curl(k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*[x,y,z]))
+
+function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
+	r2 = x^2+y^2+z^2
+	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+
+	NPOL = length(ls)
+
+	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+
+	NTOR = length(lstor)
+
+	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),ns,ls,ms)
+	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),nstor,lstor,mstor)
+    return vcat(BP,BT)
+	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
+end
+
+
+function LMN(P::InsMFONBasis{T,V}) where {T,V}
+	r2 = x^2 + y^2 + z^2
+    N = P.N
+
+	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+
+	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+
+    return ls,ms,ns,lstor,mstor,nstor
+end
+
+
+
+
+
+
+
 # Generate constructors for each defined basis
 for Basis in (:LebovitzBasis, :QGBasis, :InsulatingMFBasis, :InsMFCBasis, :GBasis)
     eval(
@@ -436,11 +499,11 @@ for Basis in (:LebovitzBasis, :QGBasis, :InsulatingMFBasis, :InsMFCBasis, :GBasi
     )
 end
 
-for Basis in (:QGIMBasis,)
+for Basis in (:QGIMBasis,:InsMFONBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
-                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),true)
+                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),false)
         ),
     )
 end
