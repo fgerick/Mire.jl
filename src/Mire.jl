@@ -20,7 +20,8 @@ const z = TypedPolynomials.Variable{:z}()
 # different bases functions
 
 include("bases.jl")
-export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis, InsulatingMFBasis, QGIMBasis, InsMFCBasis, InsMFONBasis
+export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis
+export InsulatingMFBasis, QGIMBasis, InsMFCBasis, InsMFONBasis, InsMFONCBasis
 
 include("assemble.jl")
 export MireProblem, HDProblem, MHDProblem
