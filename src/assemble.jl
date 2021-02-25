@@ -23,8 +23,8 @@ mutable struct HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
     Ω::Vector{T}
     vbasis::VectorBasis{T,Vol}
     cmat::Array{T,3}
-    LHS::AbstractMatrix{T}
-    RHS::AbstractMatrix{T}
+    LHS::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
+    RHS::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
 end
 
 """
@@ -125,7 +125,7 @@ function assemble!(P::HDProblem{T,V}; threads=false, kwargs...) where {T,V}
     nu = length(vbasis)
     nmat = nu
     TJ = promote_type(coefficienttype(vbasis[1][1]),eltype(P.cmat))
-    
+
     vbasis = vptype{TJ}.(vbasis)
      
     cmat = convert.(TJ, P.cmat)
