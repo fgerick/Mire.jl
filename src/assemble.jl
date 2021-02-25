@@ -68,8 +68,9 @@ function HDProblem(
     vbasis = VB(N, V)
     cmat = cacheint(N, V)
     n = length(vbasis.el)
-    LHS = spzeros(T, n, n)
-    RHS = spzeros(T, n, n)
+    TM = coefficienttype(vbasis.el[1][1])
+    LHS = spzeros(TM, n, n)
+    RHS = spzeros(TM, n, n)
 
     return HDProblem(N, V, Ω, vbasis, cmat, LHS, RHS)
 end
