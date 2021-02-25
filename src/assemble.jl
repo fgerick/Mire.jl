@@ -118,11 +118,43 @@ end
 Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
 `P.vbasis` on the inertial acceleration and Coriolis force.
 """
-function assemble!(P::HDProblem{T,V}) where {T,V}
+function assemble!(P::HDProblem{T,V}; threads=false, kwargs...) where {T,V}
 
-    projectforce!(P.LHS, P.cmat, P.vbasis.el, inertial)
-    projectforce!(P.RHS, P.cmat, P.vbasis.el, coriolis, P.Ω)
+    vbasis = P.vbasis.el
+    
+    nu = length(vbasis)
+    nmat = nu
+    TJ = promote_type(coefficienttype(vbasis[1][1]),eltype(P.cmat))
+    
+    vbasis = vptype{TJ}.(vbasis)
+     
+    cmat = convert.(TJ, P.cmat)
 
+    # pfun! = threads ? projectforcet! : projectforce!
+    if threads
+        RHST = zeros(eltype(P.RHS),size(P.RHS)...)
+        if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis))
+            LHST = zeros(eltype(P.LHS),size(P.LHS)...)
+            projectforcet!(view(LHST, 1:nu, 1:nu), cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
+            P.LHS = sparse(LHST)
+            println("assemble LHS done!")
+        else
+            P.LHS = one(P.LHS)
+        end
+
+        projectforcet!(view(RHST, 1:nu, 1:nu), cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+        println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+        P.RHS = sparse(RHST)
+    else
+        if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
+            projectforce!(view(P.LHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, inertial) #∂u/∂t
+        else
+            P.LHS = one(P.LHS)
+        end
+
+        projectforce!(view(P.RHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, coriolis, P.Ω) #Ω×u
+    end
     return nothing
 end
 
@@ -140,7 +172,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
     nu = length(vbasis)
     nb = length(bbasis)
     nmat = nu + nb
-    TJ = promote_type(coefficienttype(vbasis[1][1]),coefficienttype(vbasis[1][1]),eltype(P.cmat))
+    TJ = promote_type(coefficienttype(vbasis[1][1]),coefficienttype(bbasis[1][1]),eltype(P.cmat))
     bbasis = vptype{TJ}.(bbasis)
     vbasis = vptype{TJ}.(vbasis)
      
