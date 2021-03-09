@@ -1,12 +1,14 @@
 module Mire
 
+using Reexport
+
 using CartesianSphericalHarmonics
-using LinearAlgebra
-using MultivariatePolynomials
+@reexport using LinearAlgebra
+@reexport using MultivariatePolynomials
 using ProgressMeter
-using SparseArrays
+@reexport using SparseArrays
 using SpecialFunctions
-using TypedPolynomials
+@reexport using TypedPolynomials
 
 export x, y, z, r, ∇, Δ, laplacian, divergence, curl, advecterm
 export inertial, coriolis, lorentz, advection

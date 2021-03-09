@@ -49,8 +49,8 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 DOCSTRING
 """
 function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
-    ip = zero(promote_type(S,T))
     cs = coefficients(p)
+    ip = zero(T)*zero(S)
     exps = exponents.(monomial.(terms(p)))
 
     @assert maxdegree(p)<=size(cmat,1)

@@ -62,10 +62,10 @@ end
 
     #test LMN function
     ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
-    @test maximum(ls)==N
+    @test maximum(ls)==N-1
     @test ms[1] == -1
     @test mstor[1] == -1
-    @test maximum(mstor) == N-1
+    @test maximum(mstor) == N-2
 
     ## todo: Bpol + ∇Φi = ∇Φe at r = 1.
 

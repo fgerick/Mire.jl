@@ -18,7 +18,7 @@ Examples:
 `Ellipsoid(1.1,1.0,0.9)` is a `Ellipsoid{Float64}`,
 `Ellipsoid(1//1,1//2,1//5)` is a `Ellispoid{Rational{Int64}}`.
 """
-struct Ellipsoid{T<:Number} <: Volume{T}
+struct Ellipsoid{T} <: Volume{T}
     a::T
     b::T
     c::T
@@ -31,7 +31,7 @@ end
 Default: `Sphere(T)` gives a `Sphere{Float64}()`. For other types use, e.g.
 `Sphere{Rational{BigInt}}()`.
 """
-struct Sphere{T<:Number} <: Volume{T} end
+struct Sphere{T} <: Volume{T} end
 
 Sphere() = Sphere{Float64}()
 Ellipsoid(a, b, c) = Ellipsoid(promote(a, b, c)...)
@@ -289,6 +289,9 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schm
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
+	
+	N-=1 # B of degree N instead of curl(B) of degree N
+
 	r2 = x^2 + y^2 + z^2
 
 	#l,m,n for poloidal field vectors
@@ -351,6 +354,7 @@ function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}
     end
 	r2 = x^2 + y^2 + z^2
 
+	N-=1
 	#l,m,n for poloidal field vectors
 	ls = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
@@ -407,7 +411,7 @@ end
 
 function LMN(P::InsMFCBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
-    N = P.N
+    N = P.N-1
 	#l,m,n for poloidal field vectors
 	ls = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
@@ -425,7 +429,7 @@ end
 
 function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
-    N = P.N
+    N = P.N-1
 	#l,m,n for poloidal field vectors
 	ls = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
@@ -455,6 +459,7 @@ btor(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(h(T,
 bpol(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(curl(k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*[x,y,z]))
 
 function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
+	N-=1 
 	r2 = x^2+y^2+z^2
 	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
@@ -477,7 +482,7 @@ end
 
 function LMN(P::InsMFONBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
-    N = P.N
+    N = P.N-1
 
 	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
@@ -494,6 +499,8 @@ end
 
 function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Volume{T}; kwargs...) where T
 	r2 = x^2+y^2+z^2
+	N-=1
+
 	ls = [l  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ns = [n  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
@@ -516,7 +523,7 @@ end
 
 function LMN(P::InsMFONCBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
-    N = P.N
+    N = P.N-1
 
 	ls = [l  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
