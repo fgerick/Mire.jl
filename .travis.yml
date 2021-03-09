@@ -4,7 +4,7 @@ os:
         - linux
 
 julia:
-        - 1.5
+        - 1.6
 after_success:
 - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
 
@@ -12,7 +12,7 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: 1.5
+      julia: 1.6
       os:
           - linux
           - osx
