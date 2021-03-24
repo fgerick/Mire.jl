@@ -75,6 +75,13 @@ struct QGIMBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     orthonorm::Bool
 end
 
+struct QGRIMBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
 const ConductingMFBasis = LebovitzBasis
 
 """
@@ -227,16 +234,16 @@ end
 r2 = x^2 + y^2 + z^2
 
 
-# function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
-#     h2 = 1-x^2-y^2
-#     ez = [0,0,1]
-#     hgradh = [-x,-y,0]
-#     s2 = x^2 + y^2
-#     # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
-# 	ψp = jacobi(2s2-1,n,T(3//2), T(m))* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
+    h2 = one(T)-x^2-y^2
+    ez = [0,0,1]
+    hgradh = [-x,-y,0]
+    s2 = x^2 + y^2
+    # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+	ψp = jacobi(2s2-1,n,T(3//2), T(m))* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
 
-#     return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
-# end
+    return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
+end
 
 function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
     h2 = one(T)-x^2-y^2
@@ -254,6 +261,10 @@ end
 
 function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
     return [basiselementc(n,m,V) for m=0:(N-1) for n=0:(N-abs(m))÷2]
+end
+
+function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
+    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=0:(N-abs(m))÷2]
 end
 
 ## Geostrophic basis
@@ -538,7 +549,7 @@ end
 
 
 # Generate constructors for each defined basis
-for Basis in (:LebovitzBasis, :QGBasis, :InsulatingMFBasis, :InsMFCBasis, :GBasis)
+for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsMFCBasis, :GBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
