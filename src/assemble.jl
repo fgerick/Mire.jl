@@ -110,7 +110,12 @@ function MHDProblem(
     ::Type{BB},
 ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
 
-    return MHDProblem(N, V, Ω, Le, T(Inf), vptype{T}(B0), VB, BB)
+    TM = promote_type(coefficienttype(vbasis.el[1][1]),coefficienttype(bbasis.el[1][1]))
+    LHS = spzeros(TM, n, n)
+    RHS = spzeros(TM, n, n)
+    Ω /= Le*norm(Ω)
+
+    return MHDProblem(N, V, Ω, Le, T(Inf), vptype{TM}(B0), VB, BB)
 end
 
 """
