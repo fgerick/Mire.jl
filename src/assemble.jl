@@ -192,7 +192,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
                 projectforcet_symmetric_neighbours!(view(LHST,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
             else
-                projectforce!(view(LHST, nu+1:nmat, nu+1:nmat), cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+                projectforcet!(view(LHST, nu+1:nmat, nu+1:nmat), cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
             end
             P.LHS = sparse(LHST)
             println("assemble LHS done!")

@@ -562,7 +562,7 @@ for Basis in (:QGIMBasis,:InsMFONBasis, :InsMFONCBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
-                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),false)
+                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),true)
         ),
     )
 end
