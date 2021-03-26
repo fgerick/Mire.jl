@@ -110,6 +110,12 @@ function MHDProblem(
     ::Type{BB},
 ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
 
+    vbasis = VB(N, V)
+    bbasis = BB(N, V)
+    cmat = cacheint(N, V)
+    nu = length(vbasis.el)
+    nb = length(bbasis.el)
+    n = nu + nb
     TM = promote_type(coefficienttype(vbasis.el[1][1]),coefficienttype(bbasis.el[1][1]))
     LHS = spzeros(TM, n, n)
     RHS = spzeros(TM, n, n)
