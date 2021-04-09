@@ -292,3 +292,39 @@ function projectforcet_symmetric_neighbours!(
         end
     end
 end
+
+function projectforce_symmetric_neighbours!(
+    A::AbstractMatrix{T},
+    cmat::Array{T,3},
+    vs_i::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    forcefun::Function, 
+    ls::Vector{Int},
+    ms::Vector{Int},
+    ispt::Vector{Bool}, 
+    args...; 
+    n_cache = 2*10^6,
+    verbose = false
+    ) where {T, T2}
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    @assert n_1 == size(A,1)
+    @assert n_2 == size(A,2)
+    
+    ptemps = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
+
+    @inbounds for j=1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        for i = j:n_1
+            if (ls[i]==ls[j]) && (ms[i]==ms[j]) && (ispt[i]==ispt[j])
+                A_ij =  inner_product!(ptemps, vs_i[i], f, cmat)
+                A[i,j] = A_ij
+                if i!=j
+                    A[j,i] = A_ij
+                end
+            end
+
+        end
+    end
+end

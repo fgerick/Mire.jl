@@ -233,6 +233,11 @@ end
 
 r2 = x^2 + y^2 + z^2
 
+function convert_polynom(S::Type{T},p) where T
+	c = coefficients(p)
+	m = monomials(p)
+	return sum(S.(c).*m)
+end
 
 function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
     h2 = one(T)-x^2-y^2
@@ -240,8 +245,10 @@ function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
     hgradh = [-x,-y,0]
     s2 = x^2 + y^2
     # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
-	ψp = jacobi(2s2-1,n,T(3//2), T(m))* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
-
+	ψp = jacobi(2s2-1, n, T(3//2), T(m)) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
+	# ψp = jacobi(2s2-1, big(n), big(3)//2, big(m)//1) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
+	# ψp /= coefficients(ψp)[1]
+	# ψp = convert_polynom(T,ψp)
     return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
 end
 
