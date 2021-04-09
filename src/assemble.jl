@@ -219,7 +219,15 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
         println("assemble ∫ uᵢ⋅∇×uⱼ×B₀ done!")
 
         if !isinf(P.Lu)
-            projectforcet!(view(RHST, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
+            if typeof(P.bbasis) <: InsulatingMFBasis
+                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+                projectforcet_symmetric_neighbours!(view(RHST,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt; kwargs...) #∂j/∂t
+            else
+                projectforcet!(view(RHST, nu+1:nmat, nu+1:nmat), cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
+            end
+            # projectforcet!(view(RHST, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
             println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
 
