@@ -201,7 +201,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
             view(P.LHS, 1:nu, 1:nu) .= LHST
             dropzeros!(P.LHS)
 
-            if typeof(P.bbasis) <: InsulatingMFBasis
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
@@ -235,7 +235,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
         
 
         if !isinf(P.Lu)
-            if typeof(P.bbasis) <: InsulatingMFBasis
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
