@@ -212,7 +212,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
                 view(P.LHS, nu+1:nmat, nu+1:nmat) .= LHST
                 dropzeros!(P.LHS) 
             end
-            P.LHS = sparse(LHST)
+            # P.LHS = sparse(LHST)
             println("assemble LHS done!")
         else
             P.LHS = one(P.LHS)
