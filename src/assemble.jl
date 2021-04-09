@@ -198,19 +198,19 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
 
             projectforcet!(LHST, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
             
-            view(p.LHS, 1:nu, 1:nu) .= LHST
-            dropzeros!(p.LHS)
+            view(P.LHS, 1:nu, 1:nu) .= LHST
+            dropzeros!(P.LHS)
 
             if typeof(P.bbasis) <: InsulatingMFBasis
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                projectforce_symmetric_neighbours!(view(p.LHS,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
+                projectforce_symmetric_neighbours!(view(P.LHS,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
             else
                 LHST = zeros(eltype(P.LHS),nb,nb)
                 projectforcet!(LHST, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
-                view(p.LHS, nu+1:nmat, nu+1:nmat) .= LHST
-                dropzeros!(p.LHS) 
+                view(P.LHS, nu+1:nmat, nu+1:nmat) .= LHST
+                dropzeros!(P.LHS) 
             end
             P.LHS = sparse(LHST)
             println("assemble LHS done!")
@@ -218,19 +218,19 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
             P.LHS = one(P.LHS)
         end
 
-        RHST = zeros(eltype(p.RHS),nu,nu)
+        RHST = zeros(eltype(P.RHS),nu,nu)
         projectforcet!(RHST, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-        view(p.RHS, 1:nu, 1:nu) .= RHST
+        view(P.RHS, 1:nu, 1:nu) .= RHST
         println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
-        RHST = zeros(eltype(p.RHS),nu,nb)
+        RHST = zeros(eltype(P.RHS),nu,nb)
         projectforcet!(RHST, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
-        view(p.RHS, 1:nu, nu+1:nmat) .= RHST
+        view(P.RHS, 1:nu, nu+1:nmat) .= RHST
         println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
 
-        RHST = zeros(eltype(p.RHS),nb,nu)
+        RHST = zeros(eltype(P.RHS),nb,nu)
         projectforcet!(RHST, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
-        view(p.RHS, nu+1:nmat, 1:nu) .= RHST
+        view(P.RHS, nu+1:nmat, 1:nu) .= RHST
         println("assemble ∫ uᵢ⋅∇×uⱼ×B₀ done!")
         
 
@@ -241,15 +241,15 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
                 projectforce_symmetric_neighbours!(view(RHST,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt; kwargs...) #∂j/∂t
             else
-                RHST = zeros(eltype(p.RHS),nb,nb)
+                RHST = zeros(eltype(P.RHS),nb,nb)
                 projectforcet!(RHST, cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
-                view(p.RHS, nu+1:nmat, nu+1:nmat) .= RHST
+                view(P.RHS, nu+1:nmat, nu+1:nmat) .= RHST
             end
             # projectforcet!(view(RHST, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
             println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
-        
-        dropzeros!(p.RHS)
+
+        dropzeros!(P.RHS)
         # P.RHS = sparse(RHST)
     else
         if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
