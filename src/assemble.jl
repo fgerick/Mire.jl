@@ -239,7 +239,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                projectforce_symmetric_neighbours!(view(RHST,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt; kwargs...) #∂j/∂t
+                projectforce_symmetric_neighbours!(view(p.RHS,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt; kwargs...) #∂j/∂t
             else
                 RHST = zeros(eltype(P.RHS),nb,nb)
                 projectforcet!(RHST, cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
