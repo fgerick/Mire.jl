@@ -276,8 +276,10 @@ function normalizebasis!(P::MireProblem{T}; n_cache::Int = 10^6) where T
     P.vbasis = typeof(P.vbasis)(P.N,P.V,el)
 
     if typeof(P) <: MHDProblem
-       el = map(b->b/sqrt(Mire.inner_product!(ptemp,b,b,P.cmat)) , P.bbasis.el)
+
+       normfac = map(b->sqrt(Mire.inner_product!(ptemp,b,b,P.cmat)) , P.bbasis.el)
+       el = map(b->b/normfac,P.bbasis.el)
        P.bbasis = typeof(P.bbasis)(P.N,P.V,el)
     end
-    return nothing
+    return normfac
 end
