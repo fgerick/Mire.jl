@@ -220,16 +220,22 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
 
         RHST = zeros(eltype(P.RHS),nu,nu)
         projectforcet!(RHST, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+        RHST = sparse(RHST)
+        dropzeros!(RHST)
         view(P.RHS, 1:nu, 1:nu) .= RHST
         println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
         RHST = zeros(eltype(P.RHS),nu,nb)
         projectforcet!(RHST, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+        RHST = sparse(RHST)
+        dropzeros!(RHST)
         view(P.RHS, 1:nu, nu+1:nmat) .= RHST
         println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
 
         RHST = zeros(eltype(P.RHS),nb,nu)
         projectforcet!(RHST, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
+        RHST = sparse(RHST)
+        dropzeros!(RHST)
         view(P.RHS, nu+1:nmat, 1:nu) .= RHST
         println("assemble ∫ uᵢ⋅∇×uⱼ×B₀ done!")
         
@@ -249,7 +255,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
             println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
 
-        dropzeros!(P.RHS)
+        # dropzeros!(P.RHS)
         # P.RHS = sparse(RHST)
     else
         if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
