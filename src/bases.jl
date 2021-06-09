@@ -189,9 +189,9 @@ function uqg(n::Integer, m::Integer, V::Volume{T}) where {T}
         error("QG velocity not implemented for this Volume")
     end
     Π = one(T) * x^n * y^m * z^0
-    h2 = c^2 * (1 - x^2 / a^2 - y^2 / b^2)
+    h2 = c^2 * (1 - x^2*1/a^2 - y^2*1/b^2)
     ez = Mire.ez #[zero(Π),zero(Π),one(Π)]
-    h∇h = [-c^2 * x / a^2, -c^2 * y / b^2, 0]
+    h∇h = [-c^2/a^2 * x, -c^2/b^2 * y, 0]
     return h2 * ∇(Π) × ez + 3 * Π * h∇h × ez - z * ∇(Π) × h∇h
 end
 

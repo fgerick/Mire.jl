@@ -156,6 +156,83 @@ function inner_product!(
     return out
 end
 
+function _mul_to_terms_turbo!(
+    iter,
+    p,
+    u,
+    v
+    )
+
+    # t1 = terms(u)
+    # t2 = terms(v)
+    @assert length(u.terms)*length(v.terms) < length(p)-iter "Pre-cached term array not large enough! $(length(u.terms)*length(v.terms)) >= $(length(p)-iter)"
+    i = iter #number of used terms from preallocated terms-vector p
+     @turbo for i in eachindex(u.terms)# ti in t1
+        for j in eachindex(v.terms)
+            p[iter] = conj(coefficient(u.terms[i]))*monomial(u.terms[i])*v.terms[j]
+            iter += 1
+        end
+    end
+    return iter
+end
+
+
+function _inner_product!(p,u,v,cmat)
+    out = zero(coefficienttype(p[1]))
+    # iterm=dotpp!(p,u,v)
+	for i = 1:3
+		iterm = _mul_to_terms_turbo!(1,p,u[i],v[i])-1
+		 @inbounds for ip=1:iterm
+			c=coefficient(p[ip])
+			exps=exponents(p[ip])
+			out+=c*cmat[(exps .+ 1)...]
+    	end
+	end
+		
+    return out
+end
+
+function projectforcett!(
+    ptemps,
+    i0,
+    j0,
+    itemps,
+    jtemps,
+    valtemps,
+    cmat, 
+    vs_i, 
+    vs_j, 
+    forcefun, 
+    args...; 
+    verbose=false,
+    thresh=10eps())
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    # @assert n_1 == size(A,1)
+    # @assert n_2 == size(A,2)
+
+
+    @sync for j = 1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        Threads.@spawn begin
+            id = Threads.threadid()
+            for i = 1:n_1
+                    aij = _inner_product!(ptemps[id], vs_i[i], f, cmat)
+                    if abs(aij) > thresh
+                        push!(itemps[id],i+i0)
+                        push!(jtemps[id],j+j0)
+                        push!(valtemps[id],aij)
+                        # A[i,j] = aij
+                    end
+            end
+        end
+    end
+    return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
+end
+
+#
+
 #threaded and cached polynomials version of the force projection functioN
 """
     projectforcet!(A::Array{T,2}, cmat::Array{T,3}, vs_i::Array{Array{P,1},1}, vs_j::Array{Array{P,1},1}, forcefun::Function, args...; n_cache = 10^6) where {T, P <: Polynomial{T}}
@@ -257,35 +334,48 @@ function projectforce!(
 end
 
 function projectforcet_symmetric_neighbours!(
-    A::AbstractMatrix{T},
-    cmat::Array{T,3},
-    vs_i::Union{Vector{vptype{T}},Vector{vptype{T2}}},
-    vs_j::Union{Vector{vptype{T}},Vector{vptype{T2}}},
+    ptemps,
+    i0,
+    j0,
+    itemps,
+    jtemps,
+    valtemps,
+    cmat,
+    vs_i,
+    vs_j,
     forcefun::Function, 
     ls::Vector{Int},
     ms::Vector{Int},
     ispt::Vector{Bool}, 
     args...; 
-    n_cache = 2*10^6,
-    verbose = false
-    ) where {T, T2}
+    # n_cache = 2*10^6,
+    thresh=10eps(),
+    # verbose = false
+    )
 
     n_1 = length(vs_i)
     n_2 = length(vs_j)
-    @assert n_1 == size(A,1)
-    @assert n_2 == size(A,2)
+    # @assert n_1 == size(A,1)
+    # @assert n_2 == size(A,2)
     # ptemp = zeros(Term{T,Monomial{(x, y, z),3}},n_cache);
-    nt = Threads.nthreads()
-    ptemps = [zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
+    # nt = Threads.nthreads()
+    # ptemps = [zeros(Term{T,Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
 
     Threads.@threads for j=1:n_2
+        id = Threads.threadid()
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         for i = j:n_1
             if (ls[i]==ls[j]) && (ms[i]==ms[j]) && (ispt[i]==ispt[j])
-                A_ij =  inner_product!(ptemps[Threads.threadid()], vs_i[i], f, cmat)
-                A[i,j] = A_ij
-                if i!=j
-                    A[j,i] = A_ij
+                aij =  _inner_product!(ptemps[id], vs_i[i], f, cmat)
+                if abs(aij) > thresh
+                    push!(itemps[id],i+i0)
+                    push!(jtemps[id],j+j0)
+                    push!(valtemps[id],aij)
+                    if i!=j
+                        push!(itemps[id],j+j0)
+                        push!(jtemps[id],i+i0)
+                        push!(valtemps[id],aij)
+                    end
                 end
             end
 
