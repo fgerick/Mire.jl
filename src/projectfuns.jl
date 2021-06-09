@@ -212,7 +212,7 @@ function projectforcett!(
     # @assert n_1 == size(A,1)
     # @assert n_2 == size(A,2)
     if verbose
-        p = Progres(n_1*n_2)
+        p = Progress(n_1*n_2)
     end
 
     @sync for j = 1:n_2
