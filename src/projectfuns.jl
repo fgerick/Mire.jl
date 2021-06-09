@@ -211,7 +211,9 @@ function projectforcett!(
     n_2 = length(vs_j)
     # @assert n_1 == size(A,1)
     # @assert n_2 == size(A,2)
-
+    if verbose
+        p = Progres(n_1*n_2)
+    end
 
     @sync for j = 1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
@@ -225,6 +227,7 @@ function projectforcett!(
                         push!(valtemps[id],aij)
                         # A[i,j] = aij
                     end
+                    next!(p)
             end
         end
     end
