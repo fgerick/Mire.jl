@@ -311,7 +311,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
         if !(Mire.isorthonormal(P.vbasis) && Mire.isorthonormal(P.bbasis))
             # LHST = view(P.LHS, 1:nu, 1:nu) #zeros(eltype(P.LHS),nu,nu)
 
-            projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial) #∂u/∂t
+            projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
             
             if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
@@ -319,7 +319,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
                 projectforcet_symmetric_neighbours!(ptemps,nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
             else
-                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial) #∂j/∂t
+                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
             end
             P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
             println("assemble LHS done!")
@@ -333,13 +333,13 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
         jtemps = [Int[] for i=1:nt]
         valtemps = [eltype(P.LHS)[] for i=1:nt]
 
-        projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω) #Ω×u
+        projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
         println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
-        projectforcett!(ptemps, 0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0) #j×b
+        projectforcett!(ptemps, 0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
         println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
 
-        projectforcett!(ptemps, nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0)
+        projectforcett!(ptemps, nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
         println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
         
 
@@ -350,7 +350,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
                 Mire.projectforcet_symmetric_neighbours!(ptemps,nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
             else
-                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b)) #∂j/∂t
+                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
             end
             println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
@@ -366,7 +366,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
                 Mire.projectforce_symmetric_neighbours!(view(P.LHS,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
             else
-                projectforce!(view(P.LHS, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, inertial) #∂j/∂t
+                projectforce!(view(P.LHS, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
             end
             
         else
