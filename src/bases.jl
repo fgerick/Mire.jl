@@ -231,7 +231,7 @@ function jacobi(x, n::Integer, a::R, b::R) where R <: Number
     return p2
 end
 
-r2 = x^2 + y^2 + z^2
+const r2 = x^2 + y^2 + z^2
 
 function convert_polynom(S::Type{T},p) where T
 	c = coefficients(p)
@@ -267,11 +267,11 @@ end
 # qg_basis(N,V) = [basiselement(n,m,V) for m=-N:N for n=0:(N-abs(m))÷2]
 
 function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselementc(n,m,V) for m=0:(N-1) for n=0:(N-abs(m))÷2]
+    return [basiselementc(n,m,V) for m=0:(N-1) for n=0:(N-abs(m)-1)÷2]
 end
 
 function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=0:(N-abs(m))÷2]
+    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=0:(N-abs(m)-1)÷2]
 end
 
 ## Geostrophic basis
