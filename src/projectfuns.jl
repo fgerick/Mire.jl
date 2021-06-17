@@ -192,6 +192,18 @@ function _inner_product!(p,u,v,cmat)
     return out
 end
 
+function projectforcett(vs_i, vs_j, cmat, forcefun, args...; n_cache = 10^4, kwargs...)
+    nt = Threads.nthreads()
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [coefficienttype(vs_i[1][1])[] for i=1:nt]
+
+    ptemps = [zeros(Term{coefficienttype(vs_i[1][1]),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
+
+    projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
+    return sparse(vcat(itemps...), vcat(jtemps...), vcat(valtemps...))
+end
+
 function projectforcett!(
     ptemps,
     i0,
@@ -233,6 +245,50 @@ function projectforcett!(
             end
         end
     end
+    return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
+end
+
+
+function projectforcett2!(
+    ptemps,
+    i0,
+    j0,
+    itemps,
+    jtemps,
+    valtemps,
+    cmat, 
+    vs_i, 
+    vs_j, 
+    forcefun, 
+    args...; 
+    verbose=false,
+    thresh=10eps())
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    # @assert n_1 == size(A,1)
+    # @assert n_2 == size(A,2)
+    if verbose
+        p = Progress(n_1*n_2)
+    end
+
+    for j in localindices(vs_j)
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+            # id = myid() #Threads.threadid()
+            for i in localindices(vs_i)
+                aij = _inner_product!(ptemps, vs_i[i], f, cmat)
+                if abs(aij) > thresh
+                    push!(itemps,i+i0)
+                    push!(jtemps,j+j0)
+                    push!(valtemps,aij)
+                    # A[i,j] = aij
+                end
+                if verbose
+                    next!(p)
+                end
+            end
+        end
+    # end
     return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
 end
 

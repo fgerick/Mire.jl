@@ -172,7 +172,7 @@ end
 ## QG velocity basis (Gerick et al., 2020)
 
 qg_combos(N::Integer) = [[i, j] for i = 0:N for j = 0:N if (i + j < N)]
-# qg_combos(N::Integer) = (N==0) ? [[0,0]] : vcat(combos(N-1),[[i,j] for i=0:N for j=0:N if (N-1<i+j<=N)]) #sorted
+qg_combos2(N::Integer) = (N==0) ? [[0,0]] : vcat(qg_combos2(N-1),[[i,j] for i=0:N for j=0:N if (N-1<i+j<=N)]) #sorted
 
 """
     uqg(n::Integer, m::Integer, V::Volume{T}) where T
@@ -197,7 +197,7 @@ end
 
 
 function basisvectors(::Type{QGBasis}, N::Int, V::Volume{T}) where {T}
-    cs = qg_combos(N)
+    cs = qg_combos2(N-1)
     return [uqg(ci..., V) for ci in cs]
 end
 
@@ -240,27 +240,29 @@ function convert_polynom(S::Type{T},p) where T
 end
 
 function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
-    h2 = one(T)-x^2-y^2
-    ez = [0,0,1]
-    hgradh = [-x,-y,0]
-    s2 = x^2 + y^2
-    # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
+	h2 = one(T)-x^2-y^2
+	ez = [0,0,1]
+	hgradh = [-x,-y,0]
+	s2 = x^2 + y^2
 	ψp = jacobi(2s2-1, n, T(3//2), T(m)) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
 	# ψp = jacobi(2s2-1, big(n), big(3)//2, big(m)//1) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
 	# ψp /= coefficients(ψp)[1]
 	# ψp = convert_polynom(T,ψp)
-    return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
+	return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
 end
 
 function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
-    h2 = one(T)-x^2-y^2
-    ez = [0,0,1]
-    hgradh = [-x,-y,0]
-    s2 = x^2 + y^2
-    # ψp = s2^n* ((m < 0) ? CSR.sinsinpoly(-m,x,y) : CSR.cossinpoly(m,x,y))
-	ψp =  jacobi(2s2-1,n,T(3//2), T(m) ) * (im*CSR.sinsinpoly(m,x,y) + CSR.cossinpoly(m,x,y))
+	h2 = one(T)-x^2-y^2
+	ez = [0,0,1]
+	hgradh = [-x,-y,0]
+	s2 = x^2 + y^2
+	J = jacobi(2s2-1,big(n),big(3)//2, big(m)//1 )
+	
+	ψp =   J * (im*CSR.sinsinpoly(m,x,y) + CSR.cossinpoly(m,x,y))
+	# ψp /= maximum(abs.(coefficients(ψp)))
+	ψp = convert_polynom(complex(T),ψp)
 	# ψp = ψp(x=>x/a,y=>y/b)
-    return h2*∇(ψp)×ez + 3*ψp*hgradh×ez - z*∇(ψp)×hgradh
+	return h2*∇(ψp)×ez + 3*ψp*hgradh×ez - z*∇(ψp)×hgradh
 end
 
 
