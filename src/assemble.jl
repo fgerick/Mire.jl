@@ -136,7 +136,7 @@ end
 Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
 `P.vbasis` on the inertial acceleration and Coriolis force.
 """
-function assemble!(P::HDProblem{T,V}; threads=false, kwargs...) where {T,V}
+function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) where {T,V}
 
     vbasis = P.vbasis.el
     
