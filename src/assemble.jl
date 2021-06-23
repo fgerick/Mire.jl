@@ -160,7 +160,7 @@ function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) wh
     
             ptemps = [zeros(Term{eltype(P.LHS),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
             projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
-            p.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+            P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
             println("assemble LHS done!")
         else
             P.LHS = one(P.LHS)
@@ -173,10 +173,9 @@ function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) wh
         valtemps = [eltype(P.LHS)[] for i=1:nt]
 
         projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-        p.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+        P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
         println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
-        P.RHS = sparse(RHST)
     else
         if !isorthonormal(P.vbasis) 
             projectforce!(view(P.LHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, inertial) #∂u/∂t
