@@ -152,13 +152,13 @@ function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) wh
     if threads
         nt = Threads.nthreads()
 
+        ptemps = [zeros(Term{eltype(P.LHS),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
         #LHS
         if !isorthonormal(P.vbasis)
             itemps = [Int[] for i=1:nt]
             jtemps = [Int[] for i=1:nt]
             valtemps = [eltype(P.LHS)[] for i=1:nt]
     
-            ptemps = [zeros(Term{eltype(P.LHS),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
             projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
             P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
             println("assemble LHS done!")
