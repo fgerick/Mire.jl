@@ -197,7 +197,7 @@ end
 
 
 function basisvectors(::Type{QGBasis}, N::Int, V::Volume{T}) where {T}
-    cs = qg_combos2(N-1)
+    cs = qg_combos(N)
     return [uqg(ci..., V) for ci in cs]
 end
 

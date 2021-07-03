@@ -229,14 +229,15 @@ function projectforcett!(
 
     @sync for j = 1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        
         Threads.@spawn begin
             id = Threads.threadid()
             for i = 1:n_1
                 aij = _inner_product!(ptemps[id], vs_i[i], f, cmat)
                 if abs(aij) > thresh
-                    push!(itemps[id],i+i0)
-                    push!(jtemps[id],j+j0)
-                    push!(valtemps[id],aij)
+                    push!(itemps[id], i+i0)
+                    push!(jtemps[id], j+j0)
+                    push!(valtemps[id], aij)
                     # A[i,j] = aij
                 end
                 if verbose

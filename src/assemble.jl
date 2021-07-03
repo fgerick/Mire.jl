@@ -226,8 +226,9 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
             else
                 projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
             end
+            @sync println("assemble LHS done!")
             P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
-            println("assemble LHS done!")
+            
         else
             P.LHS = one(P.LHS)
         end
@@ -259,7 +260,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
             end
             println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
         end
-
+        
         P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
     else
         if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
