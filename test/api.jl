@@ -24,7 +24,7 @@ end
 
     u = Mire.ptype{ComplexF64}[x^2,im*y,z]
     v = Mire.ptype{ComplexF64}[z^0,x,y]
-    @test Mire.inner_product(u,v,cmat) ≈ Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
+    @test Mire.inner_product(u,v,cmat) == Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
 
 end
 
