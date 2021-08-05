@@ -251,7 +251,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
                     ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                     LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                     ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                    Mire.projectforcet_symmetric_neighbourst!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+                    Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
                 else
                     projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
                 end
