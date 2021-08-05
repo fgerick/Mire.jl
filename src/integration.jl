@@ -30,8 +30,8 @@ function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T)
         J = j÷2
         K = k÷2
         D = (4+i+j+k)÷2
-        coeff = gammanp1half(I)*gammanp1half(J)*gammanp1half(K)//(8*gammanp1half(D))
-        return convert(T,(1 + (-1)^i)*(1 + (-1)^j)*(a^(1 + i))*(b^(1 + j))*c*((-c)^k + c^k) *coeff)
+        coeff = gammanp1half(I)*gammanp1half(J)*gammanp1half(K)//(gammanp1half(D))
+        return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k) *coeff)
     else
         return zero(T)
     end
@@ -39,6 +39,16 @@ end
 
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
+
+function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
+    if iseven(i) && iseven(j) && iseven(k)
+        coeff = gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/gamma((5 + i + j + k)/2)
+        return a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff/pi
+    else
+        return zero(typeof(a))
+    end
+end 
+    
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
@@ -67,30 +77,6 @@ end
 Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
-
-
-dotp(u::vptype{T},v::vptype{T}) where T = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
-
-"""
-    inner_product(cmat, u, v; thresh=eps())
-
-DOCSTRING
-
-#Arguments:
-- `cmat`: DESCRIPTION
-- `u`: DESCRIPTION
-- `v`: DESCRIPTION
-- `thresh`: DESCRIPTION
-"""
-function inner_product(cmat, u, v)
-    duv = dot(u,v)
-    return int_polynomial_ellipsoid(duv,cmat)
-end
-
-function inner_product_real(cmat::Array{T1,3}, u::vptype{T}, v::vptype{T}) where {T,T1}
-    duv = dotp(u,v)
-    return int_polynomial_ellipsoid(duv,cmat)
-end
 
 """
     cacheintellipsoid(n::Int, a::T, b::T, c::T) where T

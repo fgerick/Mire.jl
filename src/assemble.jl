@@ -136,7 +136,7 @@ end
 Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
 `P.vbasis` on the inertial acceleration and Coriolis force.
 """
-function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) where {T,V}
+function assemble!(P::HDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
 
     vbasis = P.vbasis.el
     
@@ -151,17 +151,15 @@ function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) wh
     # pfun! = threads ? projectforcet! : projectforce!
     if threads
         nt = Threads.nthreads()
-
-        ptemps = [zeros(Term{eltype(P.LHS),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
         #LHS
         if !isorthonormal(P.vbasis)
             itemps = [Int[] for i=1:nt]
             jtemps = [Int[] for i=1:nt]
             valtemps = [eltype(P.LHS)[] for i=1:nt]
     
-            projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
+            @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
             P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
-            println("assemble LHS done!")
+            verbose && println("assemble LHS done!")
         else
             P.LHS = one(P.LHS)
         end
@@ -172,9 +170,9 @@ function assemble!(P::HDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) wh
         jtemps = [Int[] for i=1:nt]
         valtemps = [eltype(P.LHS)[] for i=1:nt]
 
-        projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+        @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
         P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
-        println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+        verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
     else
         if !isorthonormal(P.vbasis) 
@@ -195,7 +193,7 @@ Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity and
 magnetic field bases on the inertial acceleration, Coriolis force, Lorentz force
 and mgnetic advection.
 """
-function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) where {T,V}
+function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el
     
@@ -207,28 +205,28 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
     
     if threads
         nt = Threads.nthreads()
-        itemps = [Int[] for i=1:nt]
-        jtemps = [Int[] for i=1:nt]
-        valtemps = [eltype(P.LHS)[] for i=1:nt]
 
-        ptemps = [zeros(Term{eltype(P.LHS),Monomial{(x, y, z),3}}, n_cache) for i=1:nt]
         
         if !(Mire.isorthonormal(P.vbasis) && Mire.isorthonormal(P.bbasis))
             # LHST = view(P.LHS, 1:nu, 1:nu) #zeros(eltype(P.LHS),nu,nu)
 
-            projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
-            
-            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
-                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                projectforcet_symmetric_neighbours!(ptemps,nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
-            else
-                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+            itemps = [Int[] for i=1:nt]
+            jtemps = [Int[] for i=1:nt]
+            valtemps = [eltype(P.LHS)[] for i=1:nt]
+            @sync begin 
+                projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
+                
+                if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+                    ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                    LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+                    projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
+                else
+                    projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+                end
+                verbose && println("assemble LHS done!")
             end
-            @sync println("assemble LHS done!")
-            P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
-            
+                P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
         else
             P.LHS = one(P.LHS)
         end
@@ -239,30 +237,29 @@ function assemble!(P::MHDProblem{T,V}; threads=false, n_cache=10^4, kwargs...) w
         jtemps = [Int[] for i=1:nt]
         valtemps = [eltype(P.LHS)[] for i=1:nt]
 
-        projectforcett!(ptemps, 0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-        println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+            projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+            verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
-        projectforcett!(ptemps, 0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
-        println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
+            projectforcet!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+            verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
 
-        projectforcett!(ptemps, nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
-        println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
-        
+            projectforcet!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
+            verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
 
-        if !isinf(P.Lu)
-            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
-                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                Mire.projectforcet_symmetric_neighbours!(ptemps,nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
-            else
-                projectforcett!(ptemps, nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
+            if !isinf(P.Lu)
+                if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+                    ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                    LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+                    Mire.projectforcet_symmetric_neighbourst!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+                else
+                    projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
+                end
+                verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
             end
-            println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
-        end
-        
+        @sync true
         P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
-    else
+    else #no threads version
         if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
             projectforce!(view(P.LHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, inertial) #∂u/∂t
 

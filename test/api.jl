@@ -20,12 +20,11 @@ end
     @test cmat[3,5,3] ≈ int_monomial_ellipsoid(x^2*y^4*z^2,a,b,c)
 
     p = x^2+1
-    @test int_polynomial_ellipsoid(p,a,b,c) == 4/3*a*b*c + 4/3*a*b*c*(a^2*1/5)
+    @test int_polynomial_ellipsoid(p,a,b,c) ≈ 4/3*a*b*c + 4/3*a*b*c*(a^2*1/5)
 
     u = Mire.ptype{ComplexF64}[x^2,im*y,z]
     v = Mire.ptype{ComplexF64}[z^0,x,y]
-    @test Mire.inner_product(cmat,u,v) == Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
-    @test Mire.inner_product_real(cmat,v,v) == Mire.inner_product(v,v,a,b,c) ≈ 4/3*a*b*c*(1+a^2*1/5+b^2*1/5)
+    @test Mire.inner_product(u,v,cmat) ≈ Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
 
 end
 
@@ -86,10 +85,9 @@ end
 
     @test A ≈ B
 
-    C = zeros(nu,nu)
-    Mire.projectforcet!(C,cmat,vbasis,vbasis,inertial)
+    C = Mire.projectforcet(vbasis,vbasis,cmat,inertial)
 
-    @test B ≈ sparse(C)
+    @test B ≈ C
 
     
 end
