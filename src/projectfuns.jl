@@ -123,8 +123,8 @@ function projectforce!(
 end
 
 #vector type definition/abbreviation
-ptype{T} = Polynomial{T,Term{T,Monomial{(x, y, z),3}},Array{Term{T,Monomial{(x, y, z),3}},1}}
-vptype{T} = Vector{ptype{T}}
+# ptype{T} = Polynomial{T,Term{T,Monomial{(x, y, z),3}},Array{Term{T,Monomial{(x, y, z),3}},1}}
+# vptype{T} = Vector{ptype{T}}
 
 
 function projectforcet(vs_i, vs_j, cmat, forcefun, args...; kwargs...)

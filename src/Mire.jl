@@ -9,6 +9,7 @@ using LoopVectorization
 using ProgressMeter
 @reexport using SparseArrays
 using SpecialFunctions
+using StaticArrays
 @reexport using TypedPolynomials
 
 export x, y, z, r, ∇, Δ, laplacian, divergence, curl, advecterm
@@ -40,8 +41,8 @@ export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint
 
 struct ∇; end
 
-∂ = differentiate
-∇(ψ::T) where T = [∂.(ψ,(x,y,z))...]
+const ∂ = differentiate
+∇(ψ::T) where T = [∂(ψ,x), ∂(ψ,y), ∂(ψ,z)]
 
 import LinearAlgebra: dot, (×)
 

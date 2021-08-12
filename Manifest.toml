@@ -270,6 +270,12 @@ git-tree-sha1 = "2740ea27b66a41f9d213561a04573da5d3823d4b"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 version = "0.2.5"
 
+[[StaticArrays]]
+deps = ["LinearAlgebra", "Random", "Statistics"]
+git-tree-sha1 = "3240808c6d463ac46f1c1cd7638375cd22abbccb"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.2.12"
+
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"

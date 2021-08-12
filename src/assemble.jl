@@ -86,6 +86,8 @@ function MHDProblem(
                     ::Type{BB};
                     kwargs...
                 ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
+    
+    (T == Float64) && (N > 15) && @warn("N = $(N) with 64-bit floating point numbers will lead to inaccuricies! Consider using more accurate floats.")
 
     vbasis = VB(N, V)
     bbasis = BB(N, V; kwargs...)

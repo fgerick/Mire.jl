@@ -44,7 +44,7 @@ function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractF
     T = promote_type(typeof(a),typeof(b),typeof(c))
     if iseven(i) && iseven(j) && iseven(k)
         coeff = gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/gamma((5 + i + j + k)/2)
-        return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff/pi)
+        return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff)
     else
         return zero(T)
     end

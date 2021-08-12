@@ -6,8 +6,9 @@ Defines `abstract type` of the volume.
 abstract type Volume{T} end
 
 ptype{T} = Polynomial{T,Term{T,Monomial{(x, y, z),3}},Array{Term{T,Monomial{(x, y, z),3}},1}}
-vptype{T} = Vector{ptype{T}}
+vptype{T} = Vector{ ptype{T}}
 
+# vptype{T} = StaticArrays.SVector{3, Polynomial{T, Term{T, Monomial{(x, y, z), 3}}, Vector{Term{T, Monomial{(x, y, z), 3}}}}}
 """
     Ellipsoid{T<:Number} <: Volume{T}
 
@@ -253,8 +254,8 @@ end
 
 function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
 	h2 = one(T)-x^2-y^2
-	ez = [0,0,1]
-	hgradh = [-x,-y,0]
+	ez =   [0,0,1]
+	hgradh =   [-x,-y,0]
 	s2 = x^2 + y^2
 	J = jacobi(2s2-1,big(n),big(3)//2, big(m)//1 )
 	
@@ -315,17 +316,17 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schm
 	r2 = x^2 + y^2 + z^2
 
 	#l,m,n for poloidal field vectors
-	ls = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
 
-	NPOL = length(ls)
 
 	#l,m,n for toroidal field vectors
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
 
+	NPOL = length(ls)
 	NTOR = length(lstor)
 
 	#dummy variables to get datatypes for preallocation
@@ -376,17 +377,18 @@ function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}
 
 	N-=1
 	#l,m,n for poloidal field vectors
-	ls = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	lstor = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	mstor = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	nstor = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
 
-	NPOL = length(ls)
 
 	#l,m,n for toroidal field vectors
-	lstor = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ls = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ms = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ns  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
 
+
+	NPOL = length(ls)
 	NTOR = length(lstor)
 
 	#dummy variables to get datatypes for preallocation
@@ -433,16 +435,15 @@ function LMN(P::InsMFCBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
     N = P.N-1
 	#l,m,n for poloidal field vectors
-	ls = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	lstor = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	mstor = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	nstor = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
 
-	NPOL = length(ls)
 
 	#l,m,n for toroidal field vectors
-	lstor = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ls = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ms = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ns  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
 
     return ls,ms,ns,lstor,mstor,nstor
 end
@@ -451,32 +452,37 @@ function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
     N = P.N-1
 	#l,m,n for poloidal field vectors
-	ls = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+
+	#l,m,n for poloidal field vectors
+	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+
 
 	#l,m,n for toroidal field vectors
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+
 
     return ls,ms,ns,lstor,mstor,nstor
 end
 
 
-h(::Type{T},l::Integer,n::Integer) where T = (one(T)-r2)*jacobi(2r2-1, n-1, T(2), T(l + 1//2))
+h(::Type{T}, l::Integer, n::Integer) where T = (one(T)-r2)*jacobi(2r2-1, n-1, T(2), T(l + 1//2))
 
-function k(::Type{T},l::Integer,n::Integer) where T
+function k(::Type{T}, l::Integer, n::Integer) where T
 	c₀ = T(-2n^2*(l + 1) - n*(l + 1)*(2l - 1) - l*(2l + 1))
 	c₁ = T(2*(l + 1)*n^2 + (2l + 3)*(l + 1)*n + (2l + 1)^2)
 	c₂ = T(4n*l + l*(2l+1))
-	P0 = jacobi(2r2-1, n, zero(T), T(l + 1//2))
-	P1 = jacobi(2r2-1, n-1, zero(T), T(l + 1//2))
-	return c₀*P0+c₁*P1+c₂
+	P₀ = jacobi(2r2-1, n, zero(T), T(l + 1//2))
+	P₁ = jacobi(2r2-1, n-1, zero(T), T(l + 1//2))
+	return c₀*P₀ + c₁*P₁ + c₂
 end
 
-btor(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*[x,y,z])
-bpol(::Type{T}, n::Integer,m::Integer,l::Integer; kwargs...) where T = curl(curl(k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*[x,y,z]))
+const 𝐫 = [x, y, z]
+btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*𝐫)
+bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*𝐫))
 
 function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
 	N-=1 
