@@ -2,125 +2,107 @@
 
 
 
-function inner_product(u, v, cmat)
+# """
+#     projectforce(N::Integer,cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},forcefun::Function,a::T,b::T,c::T, args...) where {T, P <: Polynomial{T}}
 
-    out = zero(eltype(cmat))
-    @inbounds for (ui,vi) = zip(u,v)
-        for ti in terms(ui), tj in terms(vi)
-            m = monomial(ti)*monomial(tj)
-            coeff = conj(coefficient(ti))*coefficient(tj)
-            exps = exponents(m)   
-            if all(iseven.(exps)) #only the even monomials have a nonzero integral
-                out += coeff*cmat[(exps .+ 1)...]
-            end
-        end 
-    end
+# Allocates new matrix `A` and fills elements by calling
+# projectforce!(A,cmat,vs_i,vs_j,forcefun, args...)
 
-    return out
-end
+# where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
 
+# #Arguments:
+# - `N`: maximum monomial degree
+# - `vs_i`: basis vectors to project on
+# - `vs_j`: basis vectors used for `forcefun`
+# - `forcefun`: function of the force, e.g. coriolis
+# - `args`: other arguments needed for `forcefun`
+# """
+# function projectforce(
+#     cmat::Array{T,3},
+#     vs_i::Array{Array{P,1},1},
+#     vs_j::Array{Array{P,1},1},
+#     forcefun::Function, 
+#     args...;
+#     kwargs...
+#     ) where {T, P <: Polynomial{T}}
 
-"""
-    projectforce(N::Integer,cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},forcefun::Function,a::T,b::T,c::T, args...) where {T, P <: Polynomial{T}}
+#     n_1 = length(vs_i)
+#     n_2 = length(vs_j)
 
-Allocates new matrix `A` and fills elements by calling
-projectforce!(A,cmat,vs_i,vs_j,forcefun, args...)
+#     A = spzeros(T,n_1,n_2)
 
-where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
+#     projectforce!(A, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
 
-#Arguments:
-- `N`: maximum monomial degree
-- `vs_i`: basis vectors to project on
-- `vs_j`: basis vectors used for `forcefun`
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
-"""
-function projectforce(
-    cmat::Array{T,3},
-    vs_i::Array{Array{P,1},1},
-    vs_j::Array{Array{P,1},1},
-    forcefun::Function, 
-    args...;
-    kwargs...
-    ) where {T, P <: Polynomial{T}}
+#     return A
+# end
 
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
+# function projectforce(
+#     cmat::Array{T,3},
+#     vs::Array{Array{P,1},1},
+#     forcefun::Function, 
+#     args...;
+#     kwargs...
+#     ) where {T, P <: Polynomial{T}}
 
-    A = spzeros(T,n_1,n_2)
+#     return projectforce(cmat,vs,vs,forcefun,args...; kwargs...)
+# end
 
-    projectforce!(A, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
+# """
+#     projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...) where {T, P <: Polynomial{T}}
 
-    return A
-end
+# DOCSTRING
 
-function projectforce(
-    cmat::Array{T,3},
-    vs::Array{Array{P,1},1},
-    forcefun::Function, 
-    args...;
-    kwargs...
-    ) where {T, P <: Polynomial{T}}
+# #Arguments:
+# - `A`: pre-allocated array
+# - `cmat`: pre-cached monomial integration values
+# - `vs`: basis vectors
+# - `N`: maximum monomial degree
+# - `forcefun`: function of the force, e.g. coriolis
+# - `args`: other arguments needed for `forcefun`
+# """
+# function projectforce!(
+#     A::AbstractArray{T,2},
+#     cmat::Array{T,3},
+#     vs::Array{Array{P,1},1}, 
+#     forcefun::Function, 
+#     args...;
+#     kwargs...
+#     ) where {T, P <: Polynomial{T}}
 
-    return projectforce(cmat,vs,vs,forcefun,args...; kwargs...)
-end
-
-"""
-    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...) where {T, P <: Polynomial{T}}
-
-DOCSTRING
-
-#Arguments:
-- `A`: pre-allocated array
-- `cmat`: pre-cached monomial integration values
-- `vs`: basis vectors
-- `N`: maximum monomial degree
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
-"""
-function projectforce!(
-    A::AbstractArray{T,2},
-    cmat::Array{T,3},
-    vs::Array{Array{P,1},1}, 
-    forcefun::Function, 
-    args...;
-    kwargs...
-    ) where {T, P <: Polynomial{T}}
-
-    return projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
-end
+#     return projectforce!(A, cmat, vs, vs, forcefun, args...; kwargs...)
+# end
 
 
-function projectforce!(
-    A,
-    cmat, 
-    vs_i, 
-    vs_j, 
-    forcefun, 
-    args...; 
-    verbose=false,
-    thresh=10eps())
+# function projectforce!(
+#     A,
+#     cmat, 
+#     vs_i, 
+#     vs_j, 
+#     forcefun, 
+#     args...; 
+#     verbose=false,
+#     thresh=10eps())
 
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-    if verbose
-        p = Progress(n_1*n_2)
-    end
+#     n_1 = length(vs_i)
+#     n_2 = length(vs_j)
+#     if verbose
+#         p = Progress(n_1*n_2)
+#     end
 
-    for j = 1:n_2
-        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-        for i = 1:n_1
-            aij = inner_product(vs_i[i], f, cmat)
-            if abs(aij) > thresh
-                A[i,j] = aij
-            end
-            if verbose
-                next!(p)
-            end
-        end
-    end
-    return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
-end
+#     for j = 1:n_2
+#         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+#         for i = 1:n_1
+#             aij = inner_product(vs_i[i], f, cmat)
+#             if abs(aij) > thresh
+#                 A[i,j] = aij
+#             end
+#             if verbose
+#                 next!(p)
+#             end
+#         end
+#     end
+#     return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
+# end
 
 #vector type definition/abbreviation
 # ptype{T} = Polynomial{T,Term{T,Monomial{(x, y, z),3}},Array{Term{T,Monomial{(x, y, z),3}},1}}
@@ -156,12 +138,12 @@ function projectforcet!(
         p = Progress(n_1*n_2)
     end
 
-    @sync for j = 1:n_2
+    for j = 1:n_2
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         
-        Threads.@spawn begin
-            id = Threads.threadid()
-            for i = 1:n_1
+        @sync for i = 1:n_1
+            Threads.@spawn begin
+                id = Threads.threadid()
                 aij = inner_product(vs_i[i], f, cmat)
                 if abs(aij) > thresh
                     push!(itemps[id], i+i0)
@@ -178,13 +160,59 @@ function projectforcet!(
     return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
 end
 #
+function projectforce(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
+    itemps = Int[]
+    jtemps = Int[]
+    valtemps = coefficienttype(vs_i[1][1])[]
+     projectforce!(0, 0, itemps, jtemps, valtemps, cmat, vs_i, vs_j, forcefun, args...; kwargs...)
+    return sparse(itemps,jtemps,valtemps, length(vs_i), length(vs_j))
+end
+
+function projectforce!(
+    i0,
+    j0,
+    itemps,
+    jtemps,
+    valtemps,
+    cmat, 
+    vs_i, 
+    vs_j, 
+    forcefun, 
+    args...; 
+    verbose=false,
+    thresh=10eps())
+
+    n_1 = length(vs_i)
+    n_2 = length(vs_j)
+    if verbose
+        p = Progress(n_1*n_2)
+    end
+
+    for j = 1:n_2
+        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
+        
+        for i = 1:n_1
+            aij = inner_product(vs_i[i], f, cmat)
+            if abs(aij) > thresh
+                push!(itemps, i+i0)
+                push!(jtemps, j+j0)
+                push!(valtemps, aij)
+                # A[i,j] = aij
+            end
+            if verbose
+                next!(p)
+            end
+        end
+    end
+    return nothing #vcat(itemps...), vcat(jtemps...), vcat(valtemps...)
+end
+
 
 #threaded and cached polynomials version of the force projection functioN
 """
     projectforcet!(args...)
 
-Multithreaded projection using pre-cached polynomial terms array. `n_cache` needs to be sufficiently large for a given
-polynomial degree of the basis vectors (trial and error for now!). Matrix `A` must be dense due to thread safety.
+Multithreaded projection 
 """
 function projectforcet! end
 

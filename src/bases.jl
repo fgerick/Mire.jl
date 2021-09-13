@@ -13,7 +13,7 @@ vptype{T} = Vector{ ptype{T}}
     Ellipsoid{T<:Number} <: Volume{T}
 
 `Volume` type `Ellipsoid`. Create by calling `Ellipsoid(a,b,c)`, with `a,b,c` the semi-axes.
-`a,b,c` can be of any `Number` type. 
+`a,b,c` can be of any `Number` type.
 
 Examples:
 `Ellipsoid(1.1,1.0,0.9)` is a `Ellipsoid{Float64}`,
@@ -252,25 +252,30 @@ function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
 	return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
 end
 
+function prefac(n::BigInt,m::BigInt)
+	ω = -1/(n*(2n+2m+1)+m/2+m^2/6)
+	fac = gamma(n+3//2)*gamma(n+m)/(gamma(n)*(2n + 1//2 + m)*gamma(n + 3//2 + m))
+	return -4big(pi)/ω*fac
+end
+
 function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
-	h2 = one(T)-x^2-y^2
+	h² = 1-x^2-y^2
 	ez =   [0,0,1]
-	hgradh =   [-x,-y,0]
-	s2 = x^2 + y^2
-	J = jacobi(2s2-1,big(n),big(3)//2, big(m)//1 )
+	h∇h =   [-x,-y,0]
+	s² = x^2 + y^2
+	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
+
+	ψp =   J * (im*CSR.sinsinpoly(big(m),x,y) + CSR.cossinpoly(big(m),x,y))
+	ψp = convert_polynom(complex(T),ψp/sqrt(prefac(big(n),big(m))))
 	
-	ψp =   J * (im*CSR.sinsinpoly(m,x,y) + CSR.cossinpoly(m,x,y))
-	# ψp /= maximum(abs.(coefficients(ψp)))
-	ψp = convert_polynom(complex(T),ψp)
-	# ψp = ψp(x=>x/a,y=>y/b)
-	return h2*∇(ψp)×ez + 3*ψp*hgradh×ez - z*∇(ψp)×hgradh
+	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
 
 # qg_basis(N,V) = [basiselement(n,m,V) for m=-N:N for n=0:(N-abs(m))÷2]
 
 function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselementc(n,m,V) for m=0:(N-1) for n=0:(N-abs(m)-1)÷2]
+    return [basiselementc(n,m,V) for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
 end
 
 function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
@@ -288,7 +293,7 @@ function geo_veln(n::Integer,V::Volume{T}) where T
         a, b, c = V.a, V.b, V.c
     else
         error("Geostrophic velocity not implemented for this Volume")
-    end 
+    end
 
     h2 = c^2*(1-x^2/a^2-y^2/b^2)
     ez = [0,0,1]
@@ -310,7 +315,7 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schm
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
-	
+
 	N-=1 # B of degree N instead of curl(B) of degree N
 
 	r2 = x^2 + y^2 + z^2
@@ -485,7 +490,7 @@ btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × 
 bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*𝐫))
 
 function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
-	N-=1 
+	N-=1
 	r2 = x^2+y^2+z^2
 	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]

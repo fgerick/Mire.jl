@@ -43,13 +43,13 @@ gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
 function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
     T = promote_type(typeof(a),typeof(b),typeof(c))
     if iseven(i) && iseven(j) && iseven(k)
-        coeff = gamma((1 + i)/2)*gamma((1 + j)/2)*gamma((1 + k)/2)/gamma((5 + i + j + k)/2)
+        coeff = gamma(T(1 + i)/2)*gamma(T(1 + j)/2)*gamma(T(1 + k)/2)/gamma(T(5 + i + j + k)/2)
         return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff)
     else
         return zero(T)
     end
-end 
-    
+end
+
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
@@ -72,24 +72,107 @@ function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
 end
 
 
+
+function inner_product(u, v, cmat)
+
+    out = zero(eltype(cmat))
+    @inbounds for (ui,vi) = zip(u,v)
+        for ti in terms(ui), tj in terms(vi)
+            m = monomial(ti)*monomial(tj)
+            coeff = conj(coefficient(ti))*coefficient(tj)
+            i_,j_,k_ = exponents(m)
+            if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
+                out += coeff*cmat[i_+1,j_+1,k_+1]
+            end
+        end
+    end
+
+    return out
+end
+
+function inner_product2(u, v, cmat)
+
+    out = zero(eltype(cmat))
+    @inbounds for (ui,vi) = zip(u,v)
+        mu = monomials(ui)
+        mv = monomials(vi)
+        cu = coefficients(ui)
+        cv = coefficients(vi)
+        for i in eachindex(mu), j in eachindex(mv)
+            m = mu[i]*mv[j]
+            coeff = conj(cu[i])*cv[j]
+            i_,j_,k_ = exponents(m)
+            if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
+                out += coeff*cmat[i_+1, j_+1, k_+1]
+            end
+        end
+
+    end
+
+    return out
+end
+
+function inner_product3(u, v, cmat)
+    pt = Term{Complex{eltype(cmat)}, Monomial{(x, y, z), 3}}[]
+    for (ui,vi) in zip(u,v)
+        @views append!(pt,(conj.(terms(ui))*terms(vi)')[:])
+    end
+    # for vi in v
+    #     append!(pt,terms(vi))
+    # end
+    p = polynomial(pt)
+    out = zero(eltype(cmat))
+    for ti in terms(p)
+        m = monomial(ti)
+        c = coefficient(ti)
+        i_,j_,k_ = exponents(m)
+        if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
+            out += c*cmat[i_+1,j_+1,k_+1]
+        end
+    end
+
+    return out
+end
+
 """
     inner_product(u,v,a,b,c)
 
 Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
-inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
+function inner_product(u,v,a,b,c)
+
+    out = zero(promote_type(typeof(a),typeof(b),typeof(c)))
+    @inbounds for (ui,vi) = zip(u,v)
+        for ti in terms(ui), tj in terms(vi)
+            m = monomial(ti)*monomial(tj)
+            coeff = conj(coefficient(ti))*coefficient(tj)
+            i,j,k = exponents(m)
+            if iseven(i) && iseven(j) && iseven(k) #only the even monomials have a nonzero integral
+                out += coeff*int_monomial_ellipsoid(i,j,k,a,b,c)
+            end
+        end
+    end
+
+    return out
+end
+
+
+
+
 
 """
     cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
 
-Function to precalculate monomial integrations in an ellipsoid (a,b,c). 
+Function to precalculate monomial integrations in an ellipsoid (a,b,c).
 NOTE: omits the factor π for convenience (has to be reintroduced if needed)
 """
 function cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
     Nmax = 4n
     cachedmat = zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    @inbounds for i = 0:Nmax,j = 0:Nmax, k = 0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i), big(j), big(k), a, b, c)
+    Threads.@threads for i = 0:Nmax
+        for j = 0:Nmax, k = 0:Nmax
+            cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i), big(j), big(k), a, b, c)
+        end
     end
     return cachedmat
 end
