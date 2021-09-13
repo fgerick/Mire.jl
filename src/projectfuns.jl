@@ -336,7 +336,7 @@ function projectlorentzqg!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasi
     end
 end
 
-function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal, b0isp; thresh=eps())
 
     n_1 = length(vbasis)
     n_2 = length(bbasis)
@@ -345,7 +345,7 @@ function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbas
         
         f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
         for i = 1:n_1
-			if ispoloidal[j]
+			if (b0isp ? ispoloidal[j] : !ispoloidal[j])
 				if iseven(msu[i])
 					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
 				else
@@ -424,7 +424,7 @@ function projectinductionqg!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vba
     end
 end
 
-function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal, b0isp; thresh=eps())
 
     n_1 = length(bbasis)
     n_2 = length(vbasis)
@@ -432,7 +432,7 @@ function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vb
     @sync for j = 1:n_2
         f = Mire.advection(vbasis[j],b0) #calculate ∇×(uⱼ×b0)
         for i = 1:n_1
-			if ispoloidal[i]
+			if (b0isp ? ispoloidal[i] : !ispoloidal[i])
 				if iseven(msu[j])
 					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
 				else

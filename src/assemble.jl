@@ -289,7 +289,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
     return nothing
 end
 
-function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0; verbose=false, kwargs...) where {T,V}
+function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
     @warn "only checked for poloidal B0"
     @assert typeof(P.vbasis) <: Mire.QGIMBasis
     @assert typeof(P.bbasis) <: Mire.InsMFONCBasis
@@ -320,10 +320,10 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0; verbose=false, kwarg
     projectcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
     verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
-    projectlorentzqgt!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT; kwargs...) #j×b
+    projectlorentzqgt!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT, b0isp; kwargs...) #j×b
     verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
 
-    projectinductionqgt!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT; kwargs...)
+    projectinductionqgt!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT, b0isp; kwargs...)
     verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
 
     if !isinf(P.Lu)
