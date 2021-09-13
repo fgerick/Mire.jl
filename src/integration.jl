@@ -40,15 +40,15 @@ end
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
 
-function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
-    T = promote_type(typeof(a),typeof(b),typeof(c))
-    if iseven(i) && iseven(j) && iseven(k)
-        coeff = gamma(T(1 + i)/2)*gamma(T(1 + j)/2)*gamma(T(1 + k)/2)/gamma(T(5 + i + j + k)/2)
-        return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff)
-    else
-        return zero(T)
-    end
-end
+# function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
+#     T = promote_type(typeof(a),typeof(b),typeof(c))
+#     if iseven(i) && iseven(j) && iseven(k)
+#         coeff = gamma(T(1 + i)/2)*gamma(T(1 + j)/2)*gamma(T(1 + k)/2)/gamma(T(5 + i + j + k)/2)
+#         return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff)
+#     else
+#         return zero(T)
+#     end
+# end
 
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
