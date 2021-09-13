@@ -238,20 +238,23 @@ function projectforcet_symmetric_neighbours!(
     n_1 = length(vs_i)
     n_2 = length(vs_j)
  
-    Threads.@threads for j=1:n_2
-        id = Threads.threadid()
+    @sync for j=1:n_2
+        # id = Threads.threadid()
         f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
         for i = j:n_1
             if (ls[i]==ls[j]) && (ms[i]==ms[j]) && (ispt[i]==ispt[j])
-                aij =  inner_product(vs_i[i], f, cmat)
-                if abs(aij) > thresh
-                    push!(itemps[id],i+i0)
-                    push!(jtemps[id],j+j0)
-                    push!(valtemps[id],aij)
-                    if i!=j
-                        push!(itemps[id],j+j0)
-                        push!(jtemps[id],i+i0)
+                Threads.@spawn begin
+                    id = Threads.threadid()
+                    aij =  inner_product(vs_i[i], f, cmat)
+                    if abs(aij) > thresh
+                        push!(itemps[id],i+i0)
+                        push!(jtemps[id],j+j0)
                         push!(valtemps[id],aij)
+                        if i!=j
+                            push!(itemps[id],j+j0)
+                            push!(jtemps[id],i+i0)
+                            push!(valtemps[id],aij)
+                        end
                     end
                 end
             end
@@ -292,3 +295,196 @@ function projectforce_symmetric_neighbours!(
         end
     end
 end
+
+
+
+function projectlorentzqg!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+
+    n_1 = length(vbasis)
+    n_2 = length(bbasis)
+ 
+    for j = 1:n_2
+        # id = Threads.threadid()
+        f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
+        for i = 1:n_1
+			if ispoloidal[j]
+				if iseven(msu[i])
+					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+				else
+					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+				end
+			else
+				if iseven(msu[i])
+					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+				else
+					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+				end
+			end	
+
+			mcondition = ms[j] ∈ (msu[i]+mb0, msu[i]-mb0)
+			 
+            if lcondition && mcondition
+				aij =  inner_product(vbasis[i], f, cmat)
+				if abs(aij) > thresh
+					push!(itemps,i+i0)
+					push!(jtemps,j+j0)
+					push!(valtemps,aij)
+				end
+            end
+
+        end
+    end
+end
+
+function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+
+    n_1 = length(vbasis)
+    n_2 = length(bbasis)
+ 
+    for j = 1:n_2
+        
+        f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
+        for i = 1:n_1
+			if ispoloidal[j]
+				if iseven(msu[i])
+					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+				else
+					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+				end
+			else
+				if iseven(msu[i])
+					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+				else
+					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+				end
+			end	
+
+			mcondition = ms[j] ∈ (msu[i]+mb0, msu[i]-mb0)
+			 
+            if lcondition && mcondition
+                Threads.@spawn begin
+                    id = Threads.threadid()
+                    aij =  inner_product(vbasis[i], f, cmat)
+                    if abs(aij) > thresh
+                        push!(itemps[id],i+i0)
+                        push!(jtemps[id],j+j0)
+                        push!(valtemps[id],aij)
+                    end
+                end
+            end
+
+        end
+    end
+end
+
+# function projectlorentzqg(vs_i, vs_j, cmat, args...; kwargs...)
+# 	# nt = Threads.nthreads()
+# 	itemps = Int[]
+# 	jtemps = Int[]
+# 	valtemps = coefficienttype(vs_i[1][1])[]
+# 		projectlorentzqg!(0, 0, itemps, jtemps, valtemps, cmat, vs_i, vs_j, args...; kwargs...)
+# 	return sparse(vcat(itemps...), vcat(jtemps...), vcat(valtemps...), length(vs_i), length(vs_j))
+# end
+
+function projectinductionqg!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+
+    n_1 = length(bbasis)
+    n_2 = length(vbasis)
+ 
+    for j = 1:n_2
+        # id = Threads.threadid()
+        f = Mire.advection(vbasis[j],b0) #calculate ∇×(uⱼ×b0)
+        for i = 1:n_1
+			if ispoloidal[i]
+				if iseven(msu[j])
+					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+				else
+					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+				end
+			else
+				if iseven(msu[j])
+					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+				else
+					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+				end
+			end	
+
+			mcondition = ms[i] ∈ (msu[j]+mb0, msu[j]-mb0)
+			 
+            if lcondition && mcondition
+				aij =  inner_product(bbasis[i], f, cmat)
+				if abs(aij) > thresh
+					push!(itemps,i+i0)
+					push!(jtemps,j+j0)
+					push!(valtemps,aij)
+				end
+            end
+
+        end
+    end
+end
+
+function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+
+    n_1 = length(bbasis)
+    n_2 = length(vbasis)
+ 
+    @sync for j = 1:n_2
+        f = Mire.advection(vbasis[j],b0) #calculate ∇×(uⱼ×b0)
+        for i = 1:n_1
+			if ispoloidal[i]
+				if iseven(msu[j])
+					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+				else
+					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+				end
+			else
+				if iseven(msu[j])
+					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+				else
+					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+				end
+			end	
+
+			mcondition = ms[i] ∈ (msu[j]+mb0, msu[j]-mb0)
+			 
+            if lcondition && mcondition
+                Threads.@spawn begin
+                    id = Threads.threadid()
+                    aij =  inner_product(bbasis[i], f, cmat)
+                    if abs(aij) > thresh
+                        push!(itemps[id],i+i0)
+                        push!(jtemps[id],j+j0)
+                        push!(valtemps[id],aij)
+                    end
+                end
+            end
+
+        end
+    end
+end
+
+function projectcoriolisqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, Ω; thresh=eps())
+
+    n_1 = length(vbasis)
+ 
+    Threads.@threads for i = 1:n_1
+        id = Threads.threadid()
+        f = Mire.coriolis(vbasis[i],Ω) #calculate 2uⱼ×Ω
+        aij =  inner_product(vbasis[i], f, cmat)
+        if abs(aij) > thresh
+            push!(itemps[id],i+i0)
+            push!(jtemps[id],i+j0)
+            push!(valtemps[id],aij)
+        end
+    end
+    return nothing
+end
+# function projectinductionqg(vs_i, vs_j, cmat, args...; kwargs...)
+# 	# nt = Threads.nthreads()
+# 	itemps = Int[]
+# 	jtemps = Int[]
+# 	valtemps = coefficienttype(vs_i[1][1])[]
+# 		projectinductionqg!(0, 0, itemps, jtemps, valtemps, cmat, vs_i, vs_j, args...; kwargs...)
+# 	return sparse(vcat(itemps...), vcat(jtemps...), vcat(valtemps...), length(vs_i), length(vs_j))
+# end

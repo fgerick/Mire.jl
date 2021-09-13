@@ -289,6 +289,55 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
     return nothing
 end
 
+function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0; verbose=false, kwargs...) where {T,V}
+    @warn "only checked for poloidal B0"
+    @assert typeof(P.vbasis) <: Mire.QGIMBasis
+    @assert typeof(P.bbasis) <: Mire.InsMFONCBasis
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
+    
+    nu = length(vbasis)
+    nb = length(bbasis)
+    nmat = nu + nb
+    cmat = P.cmat
+    
+
+    P.LHS = one(P.LHS) #only true for the given (normalized) bases
+    
+    #right hand side:
+    ls,ms,ns,lstor,mstor,nstor = Mire.LMN(P.bbasis)
+
+    N = P.N
+    msu = [m for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+    LS,MS = vcat(ls,lstor), vcat(ms, mstor)
+    ISPT = vcat(fill(true,length(ls)),fill(false,length(lstor)))
+
+    nt = Threads.nthreads()
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+    projectcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
+    verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+    projectlorentzqgt!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT; kwargs...) #j×b
+    verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
+
+    projectinductionqgt!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT; kwargs...)
+    verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
+
+    if !isinf(P.Lu)
+        ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+        LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+        ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+        Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+        verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
+    end
+    
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+
+    return nothing
+end
 
 function assemblerhs!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
 
