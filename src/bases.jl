@@ -241,15 +241,16 @@ function convert_polynom(S::Type{T},p) where T
 end
 
 function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
-	h2 = one(T)-x^2-y^2
-	ez = [0,0,1]
-	hgradh = [-x,-y,0]
-	s2 = x^2 + y^2
-	ψp = jacobi(2s2-1, n, T(3//2), T(m)) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
-	# ψp = jacobi(2s2-1, big(n), big(3)//2, big(m)//1) * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
-	# ψp /= coefficients(ψp)[1]
-	# ψp = convert_polynom(T,ψp)
-	return h2*∇(ψp)×ez+3*ψp*hgradh×ez-z*∇(ψp)×hgradh
+	h² = 1-x^2-y^2
+	ez =   [0,0,1]
+	h∇h =   [-x,-y,0]
+	s² = x^2 + y^2
+	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
+
+	ψp =   J * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
+	ψp = convert_polynom(T,ψp/sqrt(prefac(big(n),big(abs(m)))))
+
+	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
 function prefac(n::BigInt,m::BigInt)
@@ -267,7 +268,7 @@ function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
 
 	ψp =   J * (im*CSR.sinsinpoly(big(m),x,y) + CSR.cossinpoly(big(m),x,y))
 	ψp = convert_polynom(complex(T),ψp/sqrt(prefac(big(n),big(m))))
-	
+
 	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
@@ -279,8 +280,24 @@ function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
 end
 
 function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=0:(N-abs(m)-1)÷2]
+    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
 end
+
+function NM(b::QGIMBasis)
+	N = b.N
+	ms = [m for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+	ns = [n for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+	return ns,ms
+end
+
+function NM(b::QGRIMBasis)
+	N = b.N
+	ms = [m for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
+	ns = [n for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
+	return ns, ms
+end
+
+
 
 ## Geostrophic basis
 
@@ -310,6 +327,13 @@ end
 #coefficients of interior and exterior potential field correction
 vi(l::Int, n::Int) = -(l + 1)//(4l*n + 4l + 2n + 2)
 ve(l::Int, n::Int) = l//((2*l + 1)*(2l + 2n + 3))
+
+function bpol_g21(l,m,n; kwargs...)
+	r² = x^2 + y^2 + z^2
+	Rₗᵐ = rlm(l,m,x,y,z; kwargs...)
+	Pₗₘₙ = -r²^(n+1)*Rₗᵐ / (2(n+1)*(2l+2n+3))
+	return ∇×(∇×(Pₗₘₙ*[x,y,z])) - vi(l,n)*∇(Rₗᵐ)
+end
 
 function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}()) where T
     if typeof(V) != Sphere{T}

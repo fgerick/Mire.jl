@@ -298,43 +298,43 @@ end
 
 
 
-function projectlorentzqg!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+# function projectlorentzqg!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
 
-    n_1 = length(vbasis)
-    n_2 = length(bbasis)
+#     n_1 = length(vbasis)
+#     n_2 = length(bbasis)
  
-    for j = 1:n_2
-        # id = Threads.threadid()
-        f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
-        for i = 1:n_1
-			if ispoloidal[j]
-				if iseven(msu[i])
-					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
-				else
-					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
-				end
-			else
-				if iseven(msu[i])
-					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
-				else
-					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
-				end
-			end	
+#     for j = 1:n_2
+#         # id = Threads.threadid()
+#         f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
+#         for i = 1:n_1
+# 			if ispoloidal[j]
+# 				if iseven(msu[i])
+# 					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+# 				else
+# 					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+# 				end
+# 			else
+# 				if iseven(msu[i])
+# 					lcondition = iseven(lb0) ? isodd(ls[j]) : iseven(ls[j])
+# 				else
+# 					lcondition = iseven(lb0) ? iseven(ls[j]) : isodd(ls[j])
+# 				end
+# 			end	
 
-			mcondition = ms[j] ∈ (msu[i]+mb0, msu[i]-mb0)
+# 			mcondition = ms[j] ∈ (msu[i]+mb0, msu[i]-mb0)
 			 
-            if lcondition && mcondition
-				aij =  inner_product(vbasis[i], f, cmat)
-				if abs(aij) > thresh
-					push!(itemps,i+i0)
-					push!(jtemps,j+j0)
-					push!(valtemps,aij)
-				end
-            end
+#             if lcondition && mcondition
+# 				aij =  inner_product(vbasis[i], f, cmat)
+# 				if abs(aij) > thresh
+# 					push!(itemps,i+i0)
+# 					push!(jtemps,j+j0)
+# 					push!(valtemps,aij)
+# 				end
+#             end
 
-        end
-    end
-end
+#         end
+#     end
+# end
 
 function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal, b0isp; thresh=eps())
 
@@ -359,7 +359,7 @@ function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbas
 				end
 			end	
 
-			mcondition = ms[j] ∈ (msu[i]+mb0, msu[i]-mb0)
+			mcondition = abs(ms[j]) ∈ (abs(msu[i]+mb0), abs(msu[i]-mb0))
 			 
             if lcondition && mcondition
                 Threads.@spawn begin
@@ -386,43 +386,43 @@ end
 # 	return sparse(vcat(itemps...), vcat(jtemps...), vcat(valtemps...), length(vs_i), length(vs_j))
 # end
 
-function projectinductionqg!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
+# function projectinductionqg!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal; thresh=eps())
 
-    n_1 = length(bbasis)
-    n_2 = length(vbasis)
+#     n_1 = length(bbasis)
+#     n_2 = length(vbasis)
  
-    for j = 1:n_2
-        # id = Threads.threadid()
-        f = Mire.advection(vbasis[j],b0) #calculate ∇×(uⱼ×b0)
-        for i = 1:n_1
-			if ispoloidal[i]
-				if iseven(msu[j])
-					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
-				else
-					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
-				end
-			else
-				if iseven(msu[j])
-					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
-				else
-					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
-				end
-			end	
+#     for j = 1:n_2
+#         # id = Threads.threadid()
+#         f = Mire.advection(vbasis[j],b0) #calculate ∇×(uⱼ×b0)
+#         for i = 1:n_1
+# 			if ispoloidal[i]
+# 				if iseven(msu[j])
+# 					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+# 				else
+# 					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+# 				end
+# 			else
+# 				if iseven(msu[j])
+# 					lcondition = iseven(lb0) ? isodd(ls[i]) : iseven(ls[i])
+# 				else
+# 					lcondition = iseven(lb0) ? iseven(ls[i]) : isodd(ls[i])
+# 				end
+# 			end	
 
-			mcondition = ms[i] ∈ (msu[j]+mb0, msu[j]-mb0)
+# 			mcondition = ms[i] ∈ (msu[j]+mb0, msu[j]-mb0)
 			 
-            if lcondition && mcondition
-				aij =  inner_product(bbasis[i], f, cmat)
-				if abs(aij) > thresh
-					push!(itemps,i+i0)
-					push!(jtemps,j+j0)
-					push!(valtemps,aij)
-				end
-            end
+#             if lcondition && mcondition
+# 				aij =  inner_product(bbasis[i], f, cmat)
+# 				if abs(aij) > thresh
+# 					push!(itemps,i+i0)
+# 					push!(jtemps,j+j0)
+# 					push!(valtemps,aij)
+# 				end
+#             end
 
-        end
-    end
-end
+#         end
+#     end
+# end
 
 function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal, b0isp; thresh=eps())
 
@@ -446,7 +446,7 @@ function projectinductionqgt!(i0, j0, itemps, jtemps, valtemps, cmat, bbasis, vb
 				end
 			end	
 
-			mcondition = ms[i] ∈ (msu[j]+mb0, msu[j]-mb0)
+			mcondition = abs(ms[i]) ∈ (abs(msu[j]+mb0), abs(msu[j]-mb0))
 			 
             if lcondition && mcondition
                 Threads.@spawn begin

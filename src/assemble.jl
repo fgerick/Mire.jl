@@ -221,7 +221,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
                 if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                     ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                     LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
                     projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
                 else
                     projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
@@ -252,7 +252,7 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
                 if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                     ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                     LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
                     Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
                 else
                     projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
@@ -291,8 +291,8 @@ end
 
 function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
     @warn "only checked for poloidal B0"
-    @assert typeof(P.vbasis) <: Mire.QGIMBasis
-    @assert typeof(P.bbasis) <: Mire.InsMFONCBasis
+    @assert typeof(P.vbasis) <: Union{QGIMBasis,QGRIMBasis}
+    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el
     
@@ -308,7 +308,9 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     ls,ms,ns,lstor,mstor,nstor = Mire.LMN(P.bbasis)
 
     N = P.N
-    msu = [m for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+    msu = Mire.NM(P.vbasis)[2]
+    
+
     LS,MS = vcat(ls,lstor), vcat(ms, mstor)
     ISPT = vcat(fill(true,length(ls)),fill(false,length(lstor)))
 
@@ -316,8 +318,11 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     itemps = [Int[] for i=1:nt]
     jtemps = [Int[] for i=1:nt]
     valtemps = [eltype(P.LHS)[] for i=1:nt]
-
-    projectcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
+    if typeof(P.vbasis) <: QGIMBasis
+        tcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
+    else
+        projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...)
+    end
     verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
 
     projectlorentzqgt!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT, b0isp; kwargs...) #j×b
@@ -329,7 +334,7 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     if !isinf(P.Lu)
         ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
         LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-        ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+        ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
         Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
         verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
     end

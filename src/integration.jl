@@ -40,6 +40,34 @@ end
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
 
+function int_monomial_ellipsoid2(i,j,k,a::T,b::T,c::T) where T
+    if iseven(i) && iseven(j) && iseven(k)
+
+        coeff = 2one(T)*4^2
+        for l_ in (4+i+j+k):-1:(4+i+j+k)÷2
+            coeff/=l_
+        end
+        if i!=0
+            for i_ in i÷2:i
+                coeff*=i_
+            end
+        end
+        if j!=0
+            for j_ in j÷2:j
+                coeff*=j_
+            end
+        end
+        if k!=0
+            for k_ in k÷2:k
+                coeff*=k_
+            end
+        end
+
+        return coeff*a^(1 + i)*b^(1 + j)*c^(1 + k)
+    else
+        return zero(T)
+    end
+end
 # function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
 #     T = promote_type(typeof(a),typeof(b),typeof(c))
 #     if iseven(i) && iseven(j) && iseven(k)
