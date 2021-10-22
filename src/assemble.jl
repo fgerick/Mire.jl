@@ -116,18 +116,7 @@ function MHDProblem(
     ::Type{VB},
     ::Type{BB};
     kwargs...
-) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
-
-    # vbasis = VB(N, V)
-    # bbasis = BB(N, V; kwargs...)
-    # cmat = cacheint(N, V)
-    # nu = length(vbasis.el)
-    # nb = length(bbasis.el)
-    # n = nu + nb
-    # TM = promote_type(coefficienttype(vbasis.el[1][1]),coefficienttype(bbasis.el[1][1]))
-    # @show TM
-    # LHS = spzeros(TM, n, n)
-    # RHS = spzeros(TM, n, n)
+    ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
 
     return MHDProblem(N, V, Ω, Le, T(Inf), B0, VB, BB; kwargs...)
 end
@@ -292,7 +281,7 @@ end
 function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
     @warn "only checked for poloidal B0"
     @assert typeof(P.vbasis) <: Union{QGIMBasis,QGRIMBasis}
-    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis}
+    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis, InsMFCBasis}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el
     
@@ -318,8 +307,9 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     itemps = [Int[] for i=1:nt]
     jtemps = [Int[] for i=1:nt]
     valtemps = [eltype(P.LHS)[] for i=1:nt]
+    @sync begin
     if typeof(P.vbasis) <: QGIMBasis
-        tcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
+        projectcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
     else
         projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...)
     end
@@ -338,7 +328,7 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
         Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
         verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
     end
-    
+    end
     P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
 
     return nothing
@@ -347,6 +337,23 @@ end
 function assemblerhs!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
 
 end
+
+function assemblelhs!(P::MHDProblem{T,V}; kwargs...) where {T,V}
+
+end
+
+
+
+
+# function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
+#     if threads
+#         assemble_threaded!(P,typeof(P.vbasis), typeof(P.bbasis); verbose, kwargs...)
+#     else
+#         assemble!(P,typeof(P.vbasis), typeof(P.bbasis); verbose, kwargs...)
+#     return nothing
+# end
+
+
 
 function normalizebasis!(P::MireProblem{T}; n_cache::Int = 10^6) where T
     ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)

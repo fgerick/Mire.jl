@@ -102,8 +102,7 @@ end
 
 
 function inner_product(u, v, cmat)
-
-    out = zero(eltype(cmat))
+    out = zero(first(cmat)*first(coefficients(first(u)))*first(coefficients(first(v))))
     @inbounds for (ui,vi) = zip(u,v)
         for ti in terms(ui), tj in terms(vi)
             m = monomial(ti)*monomial(tj)
@@ -176,7 +175,7 @@ function inner_product(u,v,a,b,c)
             coeff = conj(coefficient(ti))*coefficient(tj)
             i,j,k = exponents(m)
             if iseven(i) && iseven(j) && iseven(k) #only the even monomials have a nonzero integral
-                out += coeff*int_monomial_ellipsoid(i,j,k,a,b,c)
+                out += coeff*int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
             end
         end
     end

@@ -341,7 +341,7 @@ function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbas
     n_1 = length(vbasis)
     n_2 = length(bbasis)
  
-    for j = 1:n_2
+    @sync for j = 1:n_2
         
         f = lorentz(bbasis[j],b0) #calculate ∇×Bⱼ×B₀ + ∇×B₀×Bⱼ
         for i = 1:n_1
