@@ -102,7 +102,7 @@ end
 
 
 function inner_product(u, v, cmat)
-    out = zero(eltype(cmat))*zero(promote_type(coefficienttype(first(u)),coefficienttype(first(v))))
+    out = zero(eltype(cmat))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
     @inbounds for (ui,vi) = zip(u,v)
         for ti in terms(ui), tj in terms(vi)
             m = monomial(ti)*monomial(tj)
