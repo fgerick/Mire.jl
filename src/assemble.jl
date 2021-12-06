@@ -302,7 +302,6 @@ function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
 end
 
 function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
-    @warn "only checked for poloidal B0"
     @assert typeof(P.vbasis) <: Union{QGIMBasis,QGRIMBasis}
     @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis, InsMFCBasis}
     vbasis = P.vbasis.el
@@ -357,37 +356,5 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     return nothing
 end
 
-function assemblerhs!(P::MHDProblem{T,V}; threads=false, kwargs...) where {T,V}
-
-end
-
-function assemblelhs!(P::MHDProblem{T,V}; kwargs...) where {T,V}
-
-end
 
 
-
-
-# function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
-#     if threads
-#         assemble_threaded!(P,typeof(P.vbasis), typeof(P.bbasis); verbose, kwargs...)
-#     else
-#         assemble!(P,typeof(P.vbasis), typeof(P.bbasis); verbose, kwargs...)
-#     return nothing
-# end
-
-
-
-function normalizebasis!(P::MireProblem{T}; n_cache::Int = 10^6) where T
-    ptemp = zeros(Term{T,Monomial{(x, y, z),3}}, n_cache)
-    el = map(u->u/sqrt(Mire.inner_product!(ptemp,u,u,P.cmat)) , P.vbasis.el)
-    P.vbasis = typeof(P.vbasis)(P.N,P.V,el)
-
-    if typeof(P) <: MHDProblem
-
-       normfac = map(b->sqrt(Mire.inner_product!(ptemp,b,b,P.cmat)) , P.bbasis.el)
-       el = map(b->b/normfac,P.bbasis.el)
-       P.bbasis = typeof(P.bbasis)(P.N,P.V,el)
-    end
-    return normfac
-end
