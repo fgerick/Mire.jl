@@ -52,7 +52,7 @@ jobs:
         with:
           version: '1'
       - run: |
-          julia -e 'using Pkg
+          julia -e 'using Pkg;
             Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl"))'
       - run: |
           julia --project=docs -e '
