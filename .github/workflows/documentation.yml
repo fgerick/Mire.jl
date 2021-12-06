@@ -17,8 +17,7 @@ jobs:
           version: '1.7'
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg;
-              Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl"));
-              Pkg.add(PackageSpec(url="https://github.com/fgerick/Mire.jl"));  
+              Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl"));  
               Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
