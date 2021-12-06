@@ -122,58 +122,63 @@ function MHDProblem(
 end
 
 """
-    assemble!(P::HDProblem{T,V}) where {T,V}
+    assemble!(P::HDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
 
 Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
 `P.vbasis` on the inertial acceleration and Coriolis force.
 """
 function assemble!(P::HDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
 
-    vbasis = P.vbasis.el
-    
-    nu = length(vbasis)
-    nmat = nu
-    TJ = promote_type(coefficienttype(vbasis[1][1]),eltype(P.cmat))
-
-    vbasis = vptype{TJ}.(vbasis)
-     
-    cmat = convert.(TJ, P.cmat)
-
-    # pfun! = threads ? projectforcet! : projectforce!
     if threads
-        nt = Threads.nthreads()
-        #LHS
-        if !isorthonormal(P.vbasis)
-            itemps = [Int[] for i=1:nt]
-            jtemps = [Int[] for i=1:nt]
-            valtemps = [eltype(P.LHS)[] for i=1:nt]
-    
-            @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
-            P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
-            verbose && println("assemble LHS done!")
-        else
-            P.LHS = one(P.LHS)
-        end
-        
-        
-        #RHS
+        assemblet!(P; verbose, kwargs...)
+    else
+        assembles!(P; verbose, kwargs...)
+    end
+
+    return nothing
+end
+
+function assemblet!(P::HDProblem{T,V}; verbose=false, kwargs...) where {T,V}
+
+    nt = Threads.nthreads()
+    #LHS
+    if !isorthonormal(P.vbasis)
         itemps = [Int[] for i=1:nt]
         jtemps = [Int[] for i=1:nt]
         valtemps = [eltype(P.LHS)[] for i=1:nt]
 
-        @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-        P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
-        verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
-
+        @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
+        P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+        verbose && println("assemble LHS done!")
     else
-        if !isorthonormal(P.vbasis) 
-            projectforce!(view(P.LHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, inertial) #∂u/∂t
-        else
-            P.LHS = one(P.LHS)
-        end
-
-        projectforce!(view(P.RHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, coriolis, P.Ω) #Ω×u
+        P.LHS = one(P.LHS)
     end
+    
+    
+    #RHS
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+    @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+    verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+    return nothing
+end
+
+function assembles!(P::HDProblem{T,V}; verbose=false, kwargs...) where {T,V} 
+
+    vbasis = P.vbasis.el
+
+    if !isorthonormal(P.vbasis) 
+        P.LHS = projectforce(vbasis, vbasis, P.cmat, inertial) #∂u/∂t
+    else
+        P.LHS = one(P.LHS)
+    end
+
+    P.RHS = projectforce(vbasis, vbasis, P.cmat, coriolis, P.Ω) #Ω×u
+
     return nothing
 end
 
