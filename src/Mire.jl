@@ -20,17 +20,19 @@ const x = TypedPolynomials.Variable{:x}()
 const y = TypedPolynomials.Variable{:y}()
 const z = TypedPolynomials.Variable{:z}()
 
-# different bases functions
+
+include("volumes.jl")
+export Volume, Ellipsoid, Sphere
 
 include("bases.jl")
-export Volume, Ellipsoid, Sphere, LebovitzBasis, QGBasis, ConductingMFBasis
-export InsulatingMFBasis, QGIMBasis, QGRIMBasis, InsMFCBasis, InsMFONBasis, InsMFONCBasis
+export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis
+export ConductingMFBasis, InsulatingMFBasis, InsMFCBasis, InsMFONBasis, InsMFONCBasis
 
 include("assemble.jl")
-export MireProblem, HDProblem, MHDProblem
+export HDProblem, MHDProblem, assemble!
 
 include("projectfuns.jl")
-export assemble!, projectforce, projectforce!
+export projectforce, projectforce!, projectforcet
 
 include("integration.jl")
 export inner_product, int_monomial_ellipsoid, int_polynomial_ellipsoid, cacheint, cacheint_surface_torque
@@ -51,12 +53,9 @@ divergence(u) = ∇ ⋅ u
 (×)(::Type{∇}, u) = [∂(u[3],y) - ∂(u[2],z), ∂(u[1],z) - ∂(u[3],x), ∂(u[2],x) - ∂(u[1],y)] 
 curl(u) = ∇ × u
 
-# gradient(ψ) = [∂.(ψ,(x,y,z))...]
-# gradient = ∇
 laplacian(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
 Δ = laplacian
-# divergence(u) = ∂(u[1],x) + ∂(u[2],y) + ∂(u[3],z)
-# curl(u) = [∂(u[3],y) - ∂(u[2],z), ∂(u[1],z) - ∂(u[3],x), ∂(u[2],x) - ∂(u[1],y)]
+
 advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i = 1:3]
 dot(u, ::Type{∇}) = v->map(vi->u[1]*∂(vi,x) + u[2]*∂(vi,y) + u[3]*∂(vi,z), v)
 
@@ -100,7 +99,6 @@ function magneticfields(bs, αs)
     nb = length(bs)
     [eigensolution(bs, αs[end-nb+1:end,i]) for i = 1:size(αs, 2)]
 end
-
 
 
 #2D reduced set, submodule

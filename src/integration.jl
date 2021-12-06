@@ -40,34 +40,36 @@ end
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
 
-function int_monomial_ellipsoid2(i,j,k,a::T,b::T,c::T) where T
-    if iseven(i) && iseven(j) && iseven(k)
+# function int_ellipsoid(i,j,k,a::T,b::T,c::T) where T
+#     if iseven(i) && iseven(j) && iseven(k)
 
-        coeff = 2one(T)*4^2
-        for l_ in (4+i+j+k):-1:(4+i+j+k)÷2
-            coeff/=l_
-        end
-        if i!=0
-            for i_ in i÷2:i
-                coeff*=i_
-            end
-        end
-        if j!=0
-            for j_ in j÷2:j
-                coeff*=j_
-            end
-        end
-        if k!=0
-            for k_ in k÷2:k
-                coeff*=k_
-            end
-        end
 
-        return coeff*a^(1 + i)*b^(1 + j)*c^(1 + k)
-    else
-        return zero(T)
-    end
-end
+#         return a*b*c*a^i*b^j*c^k*exp(lgamma((1+i)/2)+lgamma((1+j)/2)+lgamma((1+k)/2)-lgamma((5+i+j+k)/2))
+#     else
+#         return zero(T)
+#     end
+# end
+
+# function int_monomial_ellipsoid2(i,j,k,a::T,b::T,c::T) where T
+#     if iseven(i) && iseven(j) && iseven(k)
+
+#         coeff = 32one(T)
+#         for l in (4+i+j+k)÷2:(4+i+j+k)
+#             coeff/=l
+#         end
+#         for l in (i,j,k)
+#             if l!=0
+#                 for l_ in l÷2:l
+#                     coeff*=l_
+#                 end
+#             end
+#         end
+
+#         return coeff*a^(1 + i)*b^(1 + j)*c^(1 + k)
+#     else
+#         return zero(T)
+#     end
+# end
 # function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
 #     T = promote_type(typeof(a),typeof(b),typeof(c))
 #     if iseven(i) && iseven(j) && iseven(k)
@@ -117,50 +119,6 @@ function inner_product(u, v, cmat)
     return out
 end
 
-function inner_product2(u, v, cmat)
-
-    out = zero(eltype(cmat))
-    @inbounds for (ui,vi) = zip(u,v)
-        mu = monomials(ui)
-        mv = monomials(vi)
-        cu = coefficients(ui)
-        cv = coefficients(vi)
-        for i in eachindex(mu), j in eachindex(mv)
-            m = mu[i]*mv[j]
-            coeff = conj(cu[i])*cv[j]
-            i_,j_,k_ = exponents(m)
-            if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
-                out += coeff*cmat[i_+1, j_+1, k_+1]
-            end
-        end
-
-    end
-
-    return out
-end
-
-function inner_product3(u, v, cmat)
-    pt = Term{Complex{eltype(cmat)}, Monomial{(x, y, z), 3}}[]
-    for (ui,vi) in zip(u,v)
-        @views append!(pt,(conj.(terms(ui))*terms(vi)')[:])
-    end
-    # for vi in v
-    #     append!(pt,terms(vi))
-    # end
-    p = polynomial(pt)
-    out = zero(eltype(cmat))
-    for ti in terms(p)
-        m = monomial(ti)
-        c = coefficient(ti)
-        i_,j_,k_ = exponents(m)
-        if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
-            out += c*cmat[i_+1,j_+1,k_+1]
-        end
-    end
-
-    return out
-end
-
 """
     inner_product(u,v,a,b,c)
 
@@ -168,7 +126,7 @@ Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
 function inner_product(u,v,a,b,c)
 
-    out = zero(promote_type(typeof(a),typeof(b),typeof(c)))
+    out = zero(promote_type(typeof(a),typeof(b),typeof(c)))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
     @inbounds for (ui,vi) = zip(u,v)
         for ti in terms(ui), tj in terms(vi)
             m = monomial(ti)*monomial(tj)

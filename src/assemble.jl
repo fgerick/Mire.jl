@@ -1,10 +1,10 @@
 ### Functions to create matrices and assemble the full system.
 
-abstract type MireProblem{T,V} end
+# abstract type MireProblem{T,V} end
 
 
 """
-    HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
+    HDProblem{T<:Number,Vol<:Volume{T}}
 
 Defines hydrodynamic problem.
 
@@ -17,7 +17,7 @@ V = Ellipsoid(1.1,1.0,0.9)
 problem = HDProblem(N,V,Ω,LebovitzBasis)
 ```
 """
-mutable struct HDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
+mutable struct HDProblem{T<:Number,Vol<:Volume{T}}
     N::Int
     V::Vol
     Ω::Vector{T}
@@ -44,7 +44,7 @@ B0 = [-y/b^2,x/a^2,0] #Malkus field
 problem = MHDProblem(N,V,Ω,B0,QGBasis,ConductingMFBasis)
 ```
 """
-mutable struct MHDProblem{T,Vol<:Volume{T}} <: MireProblem{T,Vol}
+mutable struct MHDProblem{T,Vol<:Volume{T}}
     N::Int
     V::Vol
     Ω::Vector{T}
