@@ -32,10 +32,10 @@ end
     N = 3
     V = Ellipsoid(3//5,4//5,6//5)
     # check if ellipsoid throws an error:
-    @test_throws ArgumentError InsulatingMFBasis(N,V; norm=Mire.Nonorm{Rational{Int}}())
+    @test_throws ArgumentError InsulatingMFBasis(N,V; norm=Mire.Nonorm{Rational{Int}})
 
     #first element of basis check:
-    b = InsulatingMFBasis(N, Sphere{Rational{Int}}(), norm=Mire.Nonorm{Rational{Int}}())
+    b = InsulatingMFBasis(N, Sphere{Rational{Int}}(), norm=Mire.Nonorm{Rational{Int}})
     l, m, n = 1, -1, 0
     RLM = - y
     P1m1 = -(x^2+y^2+z^2)^(n + 1)*RLM*1//(2(n+1)*(2l+2n+3))

@@ -14,7 +14,7 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[deps.CartesianSphericalHarmonics]]
 deps = ["LinearAlgebra", "MultivariatePolynomials", "Reexport", "TypedPolynomials"]
-git-tree-sha1 = "89d3d80b787b8b63b97f3dc53a406f94f31c5dd0"
+git-tree-sha1 = "f9b5825b1da041d68c924968a97b7be4e311dd07"
 repo-rev = "master"
 repo-url = "https://github.com/fgerick/CartesianSphericalHarmonics.jl.git"
 uuid = "76434f01-525d-4cbb-bcb9-3cdf14f74cfc"

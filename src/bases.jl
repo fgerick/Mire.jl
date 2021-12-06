@@ -299,7 +299,7 @@ function bpol_g21(l,m,n; kwargs...)
 	return ∇×(∇×(Pₗₘₙ*[x,y,z])) - vi(l,n)*∇(Rₗᵐ)
 end
 
-function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}()) where T
+function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
@@ -362,7 +362,7 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schm
     return vcat(b_pol, b_tor)
 end
 
-function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}()) where T
+function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
@@ -474,8 +474,8 @@ function k(::Type{T}, l::Integer, n::Integer) where T
 end
 
 const 𝐫 = [x, y, z]
-btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*𝐫)
-bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}(), kwargs...)*𝐫))
+btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫)
+bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
 
 function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
 	N-=1
