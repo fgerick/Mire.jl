@@ -61,10 +61,10 @@ end
 
     #test LMN function
     ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
-    @test maximum(ls)==N-1
-    @test ms[1] == -1
+    @test maximum(lstor)==N-1
     @test mstor[1] == -1
-    @test maximum(mstor) == N-2
+    @test ms[1] == -1
+    @test maximum(ms) == N-2
 
     ## todo: Bpol + ∇Φi = ∇Φe at r = 1.
 
@@ -80,14 +80,14 @@ end
     A = spzeros(nu,nu)
     cmat = cacheint(N,V)
 
-    projectforce!(A,cmat,vbasis,vbasis,inertial)
-    B = projectforce(cmat,vbasis,vbasis,inertial)
+    # projectforce!(A,cmat,vbasis,vbasis,inertial)
+    A = projectforce(vbasis,vbasis,cmat,inertial)
+
+    # @test A ≈ B
+
+    B = Mire.projectforcet(vbasis,vbasis,cmat,inertial)
 
     @test A ≈ B
-
-    C = Mire.projectforcet(vbasis,vbasis,cmat,inertial)
-
-    @test B ≈ C
 
     
 end

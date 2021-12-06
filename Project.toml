@@ -6,7 +6,6 @@ version = "0.2.0"
 [deps]
 CartesianSphericalHarmonics = "76434f01-525d-4cbb-bcb9-3cdf14f74cfc"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"

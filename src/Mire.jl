@@ -4,7 +4,6 @@ using Reexport
 
 using CartesianSphericalHarmonics
 @reexport using LinearAlgebra
-using LoopVectorization
 @reexport using MultivariatePolynomials
 using ProgressMeter
 @reexport using SparseArrays
