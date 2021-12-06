@@ -58,6 +58,7 @@ laplacian(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
 # divergence(u) = ∂(u[1],x) + ∂(u[2],y) + ∂(u[3],z)
 # curl(u) = [∂(u[3],y) - ∂(u[2],z), ∂(u[1],z) - ∂(u[3],x), ∂(u[2],x) - ∂(u[1],y)]
 advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i = 1:3]
+dot(u, ::Type{∇}) = v->map(vi->u[1]*∂(vi,x) + u[2]*∂(vi,y) + u[3]*∂(vi,z), v)
 
 # Cartesian unit vectors
 const ex = [1,0,0]

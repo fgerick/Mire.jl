@@ -7,7 +7,7 @@
     prob = HDProblem(N,Sphere(), Ω, LebovitzBasis)
     assemble!(prob)
     A,B = prob.RHS,prob.LHS
-    esol = eigen(inv(Matrix(B))*A)
+    esol = eigen(Matrix(A), Matrix(B))
     ω = esol.values
 
     # Zhang et al., J. Fluid Mech. (2001), vol. 437, pp. 103–119. eq (4.5)

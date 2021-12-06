@@ -13,6 +13,6 @@
     @test curl(u) == ∇×u == [-x^2*y,0,2x*y*z-x]
     v = [0,0,x]
 
-    @test advecterm(v,u) == [0,x^3*y,2x*z]
+    @test advecterm(v,u) == (v⋅∇)(u) == [0,x^3*y,2x*z]
 
 end

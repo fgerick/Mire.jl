@@ -190,6 +190,15 @@ magnetic field bases on the inertial acceleration, Coriolis force, Lorentz force
 and mgnetic advection.
 """
 function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
+    if threads
+        assemblet!(P; verbose, kwargs...)
+    else
+        assembles!(P; verbose, kwargs...)
+    end
+    return nothing
+end
+
+function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el
     
@@ -198,87 +207,96 @@ function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) 
     nmat = nu + nb
     cmat = P.cmat
 
+    nt = Threads.nthreads()
     
-    if threads
-        nt = Threads.nthreads()
-
-        
-        if !(Mire.isorthonormal(P.vbasis) && Mire.isorthonormal(P.bbasis))
-            # LHST = view(P.LHS, 1:nu, 1:nu) #zeros(eltype(P.LHS),nu,nu)
-
-            itemps = [Int[] for i=1:nt]
-            jtemps = [Int[] for i=1:nt]
-            valtemps = [eltype(P.LHS)[] for i=1:nt]
-            @sync begin 
-                projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
-                
-                if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
-                    ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                    LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
-                    projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
-                else
-                    projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
-                end
-                verbose && println("assemble LHS done!")
-            end
-                P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
-        else
-            P.LHS = one(P.LHS)
-        end
-
-        #right hand side:
+    if !(Mire.isorthonormal(P.vbasis) && Mire.isorthonormal(P.bbasis))
 
         itemps = [Int[] for i=1:nt]
         jtemps = [Int[] for i=1:nt]
         valtemps = [eltype(P.LHS)[] for i=1:nt]
-
-            projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
-            verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
-
-            projectforcet!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
-            verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
-
-            projectforcet!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
-            verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
-
-            if !isinf(P.Lu)
-                if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
-                    ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                    LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                    ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
-                    Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
-                else
-                    projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
-                end
-                verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
-            end
-        @sync true
-        P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
-    else #no threads version
-        if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
-            projectforce!(view(P.LHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, inertial) #∂u/∂t
-
+        @sync begin 
+            projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
+            
             if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-                Mire.projectforce_symmetric_neighbours!(view(P.LHS,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
+                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
             else
-                projectforce!(view(P.LHS, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+                projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
             end
-            
-        else
-            P.LHS = one(P.LHS)
+            verbose && println("assemble LHS done!")
         end
-
-        projectforce!(view(P.RHS, 1:nu, 1:nu), P.cmat, vbasis, vbasis, coriolis, P.Ω) #Ω×u
-        projectforce!(view(P.RHS, 1:nu, nu+1:nmat), P.cmat, vbasis, bbasis, lorentz, P.B0) #j×b
-        projectforce!(view(P.RHS, nu+1:nmat, 1:nu), P.cmat, bbasis, vbasis, advection, P.B0)        
-        if !isinf(P.Lu)
-            projectforce!(view(P.RHS, nu+1:nmat, nu+1:nmat), P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
-        end
+            P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+    else
+        P.LHS = one(P.LHS)
     end
+
+        #right hand side:
+
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+        projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+        verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+        projectforcet!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+        verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
+
+        projectforcet!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
+        verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
+
+        if !isinf(P.Lu)
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+            else
+                projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
+            end
+            verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
+        end
+    @sync true
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+
+end
+
+function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
+    
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
+    nu = length(vbasis)
+    nmat = size(P.LHS,1)
+
+    itemps,jtemps,valtemps = Int[], Int[], eltype(P.LHS)[]
+    if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
+        projectforce!(0, 0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
+
+        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+            ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+            LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+            ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+            Mire.projectforce_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,P.cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
+        else
+            projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+        end
+        P.LHS = sparse(itemps,jtemps,valtemps, nmat, nmat)
+    else
+        P.LHS = one(P.LHS)
+    end
+
+    itemps, jtemps, valtemps = Int[], Int[], eltype(P.RHS)[]
+    projectforce!(0,0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+    projectforce!(0, nu, itemps, jtemps, valtemps, P.cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+    projectforce!(nu, 0, itemps, jtemps, valtemps, P.cmat,  bbasis, vbasis, advection, P.B0; kwargs...)     
+
+    if !isinf(P.Lu)
+        projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
+    end
+
+    P.RHS = sparse(itemps, jtemps, valtemps, nmat, nmat)
 
     return nothing
 end
