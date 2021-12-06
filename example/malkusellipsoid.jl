@@ -1,20 +1,22 @@
 #Solving for Malkus modes in the ellipsoid using a hybrid model
 
-using Mire, LinearAlgebra
+using Mire
 
 N,a,b,c = 7,1.25,0.8,1.0
-cmat = cacheint(N,a,b,c)
-vbasis = qg_vel(N,a,b,c)
-bbasis = vel(N,a,b,c)
-
+V = Ellipsoid(a,b,c)
 Le = 1e-4
-Ω = [0,0,1/Le]
-b0 = [-y/b^2,x/a^2,0] #modified Malkus field.
+Lu = Inf #no magnetic diffusion
+Ω = [0,0,1.0]
+B₀ = [-y/b^2,x/a^2,0] #modified Malkus field.
 
-LHS,RHS = assemblemhd(Ω,b0,vbasis,bbasis,cmat)
+#setup the problem to be solved
+p = MHDProblem(N, V, Ω, Le, Lu, B₀, QGBasis, ConductingMFBasis)
+
+#assemble the matrices using all threads available to julia (to start with 16 threads use "julia -t 16")
+assemble!(p; threads=true)
 
 #convert sparse to dense matrices and use LAPACK to solve generalized eigenproblem
-esol = eigen(Matrix(RHS),Matrix(LHS))
+esol = eigen(Matrix(p.RHS), Matrix(p.LHS))
 
 #eigenvalues are complex with vanishingly small real part. Take only positive
 #imaginary values:

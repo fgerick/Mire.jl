@@ -15,17 +15,19 @@ Check out the [documentation](https://fgerick.github.io/Mire.jl/dev/) for help o
 
 ## Questions
 
-If you have trouble using this library or find errors in the examples, please don't hesitate to file an issue on GitHub or get in touch with me directly (via felix[dot]gerick[at]univ-grenoble-alpes[dot]fr or [researchgate](https://www.researchgate.net/profile/Felix_Gerick)).
+If you have trouble using this library or find errors in the examples, please don't hesitate to file an issue on GitHub or get in touch with me directly (via felix[dot]gerick[at]observatory[dot]be or [researchgate](https://www.researchgate.net/profile/Felix_Gerick)).
 
 ## Citation
 
-If you use this software, please cite
+If you use this software in your research, please consider citing one of the relevant articles:
 
-F Gerick, D Jault, J Noir, and J Vidal, (2020). Pressure torque of torsional Alfvén modes acting on an ellipsoidal mantle, Geophysical Journal International, [10.1093/gji/ggaa166](https://doi.org/10.1093/gji/ggaa166)
+Gerick F., Jault D., Noir J., and Vidal J., (2020). Pressure torque of torsional Alfvén modes acting on an ellipsoidal mantle, Geophysical Journal International, [10.1093/gji/ggaa166](https://doi.org/10.1093/gji/ggaa166)
+
+Gerick F., Jault D., and Noir J., (2021). Fast Quasi-Geostrophic Magneto-Coriolis Modes in the Earth's Core, Geophysical Research Letters, [10.1029/2020GL090803](https://doi.org/10.1029/2020GL090803)
 
 ```
-@article{10.1093/gji/ggaa166,
-    author = {Gerick, F and Jault, D and Noir, J and Vidal, J},
+@article{gerick_pressure_2020,
+    author = {Gerick, F. and Jault, D. and Noir, J. and Vidal, J.},
     title = "{Pressure torque of torsional Alfvén modes acting on an ellipsoidal mantle}",
     journal = {Geophysical Journal International},
     volume = {222},
@@ -37,5 +39,19 @@ F Gerick, D Jault, J Noir, and J Vidal, (2020). Pressure torque of torsional Alf
     doi = {10.1093/gji/ggaa166},
     url = {https://doi.org/10.1093/gji/ggaa166},
     eprint = {https://academic.oup.com/gji/article-pdf/222/1/338/33181751/ggaa166.pdf},
+}
+
+@article{gerick_fast_2021,
+  title = {Fast Quasi-Geostrophic Magneto-Coriolis Modes in the Earth's Core},
+  author = {Gerick, F. and Jault, D. and Noir, J.},
+  year = {2021},
+  journal = {Geophysical Research Letters},
+  volume = {48},
+  number = {4},
+  pages = {e2020GL090803},
+  issn = {1944-8007},
+  doi = {10.1029/2020GL090803},
+  langid = {english},
+  annotation = {\_eprint: https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2020GL090803}
 }
 ```
