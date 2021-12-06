@@ -12,14 +12,6 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
-[[deps.CartesianSphericalHarmonics]]
-deps = ["LinearAlgebra", "MultivariatePolynomials", "Reexport", "TypedPolynomials"]
-git-tree-sha1 = "f9b5825b1da041d68c924968a97b7be4e311dd07"
-repo-rev = "master"
-repo-url = "https://github.com/fgerick/CartesianSphericalHarmonics.jl"
-uuid = "76434f01-525d-4cbb-bcb9-3cdf14f74cfc"
-version = "0.1.0"
-
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "4c26b4e9e91ca528ea212927326ece5918a04b47"
@@ -224,11 +216,6 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[deps.Random]]
 deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-
-[[deps.Reexport]]
-git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
-uuid = "189a3867-3050-52da-a836-e630ba90ab69"
-version = "1.2.2"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
