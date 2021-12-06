@@ -51,9 +51,9 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1'
-      - run: |
-          julia -e 'using Pkg;
-            Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl"))'
+      # - run: |
+      #     julia -e 'using Pkg;
+      #       Pkg.add(PackageSpec(url="https://github.com/fgerick/CartesianSphericalHarmonics.jl"))'
       - run: |
           julia --project=docs -e '
             using Pkg
