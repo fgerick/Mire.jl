@@ -1,5 +1,5 @@
-using Test, LinearAlgebra, Mire
+using Test, LinearAlgebra, SparseArrays, Mire
 
-include("calculus.jl")
 include("api.jl")
 include("modes.jl")
+include("calculus.jl")

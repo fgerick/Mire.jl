@@ -30,8 +30,8 @@ function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T)
         J = j÷2
         K = k÷2
         D = (4+i+j+k)÷2
-        coeff = gammanp1half(I)*gammanp1half(J)*gammanp1half(K)//(8*gammanp1half(D))
-        return convert(T,(1 + (-1)^i)*(1 + (-1)^j)*(a^(1 + i))*(b^(1 + j))*c*((-c)^k + c^k) *coeff)
+        coeff = gammanp1half(I)*gammanp1half(J)*gammanp1half(K)//(gammanp1half(D))
+        return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k) *coeff)
     else
         return zero(T)
     end
@@ -39,6 +39,47 @@ end
 
 #Γ(1/2+n)/√π
 gammanp1half(n::Integer) = factorial(2n)//(big(4)^n*factorial(n))
+
+# function int_ellipsoid(i,j,k,a::T,b::T,c::T) where T
+#     if iseven(i) && iseven(j) && iseven(k)
+
+
+#         return a*b*c*a^i*b^j*c^k*exp(lgamma((1+i)/2)+lgamma((1+j)/2)+lgamma((1+k)/2)-lgamma((5+i+j+k)/2))
+#     else
+#         return zero(T)
+#     end
+# end
+
+# function int_monomial_ellipsoid2(i,j,k,a::T,b::T,c::T) where T
+#     if iseven(i) && iseven(j) && iseven(k)
+
+#         coeff = 32one(T)
+#         for l in (4+i+j+k)÷2:(4+i+j+k)
+#             coeff/=l
+#         end
+#         for l in (i,j,k)
+#             if l!=0
+#                 for l_ in l÷2:l
+#                     coeff*=l_
+#                 end
+#             end
+#         end
+
+#         return coeff*a^(1 + i)*b^(1 + j)*c^(1 + k)
+#     else
+#         return zero(T)
+#     end
+# end
+# function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::AbstractFloat, b::AbstractFloat, c::AbstractFloat)
+#     T = promote_type(typeof(a),typeof(b),typeof(c))
+#     if iseven(i) && iseven(j) && iseven(k)
+#         coeff = gamma(T(1 + i)/2)*gamma(T(1 + j)/2)*gamma(T(1 + k)/2)/gamma(T(5 + i + j + k)/2)
+#         return convert(T,a^(1 + i)*b^(1 + j)*c^(1 + k)*coeff)
+#     else
+#         return zero(T)
+#     end
+# end
+
 
 int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_monomial_ellipsoid.(monomial.(terms(p)),a,b,c))
 
@@ -49,8 +90,8 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 DOCSTRING
 """
 function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
-    ip = zero(promote_type(S,T))
     cs = coefficients(p)
+    ip = zero(T)*zero(S)
     exps = exponents.(monomial.(terms(p)))
 
     @assert maxdegree(p)<=size(cmat,1)
@@ -61,83 +102,65 @@ function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
 end
 
 
+
+function inner_product(u, v, cmat)
+    out = zero(eltype(cmat))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
+    @inbounds for (ui,vi) = zip(u,v)
+        for ti in terms(ui), tj in terms(vi)
+            m = monomial(ti)*monomial(tj)
+            coeff = conj(coefficient(ti))*coefficient(tj)
+            i_,j_,k_ = exponents(m)
+            if iseven(i_) && iseven(j_) && iseven(k_) #only the even monomials have a nonzero integral
+                out += coeff*cmat[i_+1,j_+1,k_+1]
+            end
+        end
+    end
+
+    return out
+end
+
 """
     inner_product(u,v,a,b,c)
 
 Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
 """
-inner_product(u,v,a::Real,b::Real,c::Real) = int_polynomial_ellipsoid(dot(u,v),a,b,c)
+function inner_product(u,v,a,b,c)
 
+    out = zero(promote_type(typeof(a),typeof(b),typeof(c)))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
+    @inbounds for (ui,vi) = zip(u,v)
+        for ti in terms(ui), tj in terms(vi)
+            m = monomial(ti)*monomial(tj)
+            coeff = conj(coefficient(ti))*coefficient(tj)
+            i,j,k = exponents(m)
+            if iseven(i) && iseven(j) && iseven(k) #only the even monomials have a nonzero integral
+                out += coeff*int_monomial_ellipsoid(big(i),big(j),big(k),a,b,c)
+            end
+        end
+    end
 
-dotp(u,v) = u[1]*v[1]+u[2]*v[2]+u[3]*v[3]
-
-"""
-    inner_product(cmat, u, v; thresh=eps())
-
-DOCSTRING
-
-#Arguments:
-- `cmat`: DESCRIPTION
-- `u`: DESCRIPTION
-- `v`: DESCRIPTION
-- `thresh`: DESCRIPTION
-"""
-function inner_product(cmat, u, v)
-    duv = dot(u,v)
-    return int_polynomial_ellipsoid(duv,cmat)
+    return out
 end
 
-function inner_product_real(cmat, u, v)
-    duv = dotp(u,v)
-    return int_polynomial_ellipsoid(duv,cmat)
-end
+
+
+
 
 """
-Function to precalculate monomial integrations.
+    cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
+
+Function to precalculate monomial integrations in an ellipsoid (a,b,c).
+NOTE: omits the factor π for convenience (has to be reintroduced if needed)
 """
-function cacheint(n::Int, a::T, b::T, c::T) where T
+function cacheintellipsoid(n::Int, a::T, b::T, c::T) where T
     Nmax = 4n
     cachedmat = zeros(T,Nmax+1,Nmax+1,Nmax+1)
-    @inbounds for i = 0:Nmax,j = 0:Nmax, k = 0:Nmax
-        cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i), big(j), big(k), a, b, c)
+    Threads.@threads for i = 0:Nmax
+        for j = 0:Nmax, k = 0:Nmax
+            cachedmat[i+1,j+1,k+1] = int_monomial_ellipsoid(big(i), big(j), big(k), a, b, c)
+        end
     end
     return cachedmat
 end
 
-#Quagmire integration
-
-
-# integrates ∫∫ x^i y^j sabc h^3 dsdϕ
-function int_monomial_ellipse(i::BigInt,j::BigInt,a::Real,b::Real,c::Real)
-    return ((3*(1+(-1)^i)*(1+(-1)^j)*a^(1+i)*b^(1+j)*c^3*√big(π)*gamma((1+i)/2)*gamma((1+j)/2))/(16*gamma((7+i+j)/2)))
-end
-
-function 𝒟(Π,a::T,b::T,c::T) where T
-    if Π == 0
-        return 0
-    else
-        cs = coefficients(Π)
-        exps = exponents.(monomial.(terms(Π)))
-        return sum([co*poly_inertial(nmpair...,a,b,c) for (nmpair,co) in zip(exps,cs)])
-    end
-end
-
-function inner_product_2D(cmat,u,v,a::T,b::T,c::T) where T
-    duv = u*𝒟(v,a,b,c)
-    ip = zero(eltype(cmat))
-    cs = coefficients(duv)
-    exps = exponents.(monomials(duv))
-    @inbounds for i=1:length(cs)
-        ip+=cs[i]*cmat[(exps[i] .+ 1)...]
-    end
-    return ip
-end
-
-function cacheint2D(n::Int,a::T,b::T,c::T) where T
-    Nmax = 4n
-    cmat = zeros(T,Nmax+1,Nmax+1)
-    for i=0:Nmax,j=0:Nmax
-        cmat[i+1,j+1] = int_monomial_ellipse(big(i),big(j),a,b,c)
-    end
-    return cmat
-end
+cacheint(n::Int, V::Ellipsoid{T}) where T = cacheintellipsoid(n,V.a,V.b,V.c)
+cacheint(n::Int, V::Sphere{T}) where T = cacheintellipsoid(n,one(T),one(T),one(T))

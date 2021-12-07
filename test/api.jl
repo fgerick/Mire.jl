@@ -1,31 +1,93 @@
+@testset "Miscellaneous API" begin
 
-@testset "miscellaneous function tests" begin
 
-    for n in 3:7
-        vs = vel(n,1,1,1)
-        @test length(vs) == n_u(n)
-    end
+    vs = [[x,y,z],Mire.ex,Mire.ey,Mire.ez]
+    bs = [[x,y,z],Mire.ex,Mire.ey,Mire.ez] 
+    αs = [1//2,1,0,3, 1,2,0,1]
 
-    vs = [[x,y,z],ex,ey,ez]
-    αs = [1//2,1,0,3]
-    @test eigenvel(vs,αs) == [1//2*x+1,1//2*y,1//2*z+3]
+    @test velocities(vs,αs)[1] == [1//2*x+1,1//2*y,1//2*z+3]
+    @test magneticfields(vs,αs)[1] == [x+2//1, y, z + 1//1]
+
 end
 
 
-@testset "monomial integrations" begin
+@testset "Monomial integrations" begin
 
     a,b,c = 0.2,0.3,0.4
-    cmat = cacheint(3,a,b,c)
+    cmat = cacheint(3,Ellipsoid(a,b,c))
 
     @test cmat[1,1,1] ≈ int_monomial_ellipsoid(x^0,a,b,c) ≈ 4/3*a*b*c
-    @test cmat[2,3,1] ≈ int_monomial_ellipsoid(x^2*y^3*z,a,b,c)
+    @test cmat[3,5,3] ≈ int_monomial_ellipsoid(x^2*y^4*z^2,a,b,c)
 
     p = x^2+1
-    @test int_polynomial_ellipsoid(p,a,b,c) == 4/3*a*b*c + 4/3*a*b*c*(a^2*1/5)
+    @test int_polynomial_ellipsoid(p,a,b,c) ≈ 4/3*a*b*c + 4/3*a*b*c*(a^2*1/5)
 
-    u = [x^2,im*y,z]
-    v = [z^0,x,y]
-    @test Mire.inner_product(cmat,u,v) == Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
-    @test Mire.inner_product_real(cmat,v,v) == Mire.inner_product(v,v,a,b,c) ≈ 4/3*a*b*c*(1+a^2*1/5+b^2*1/5)
+    u = Mire.ptype{ComplexF64}[x^2,im*y,z]
+    v = Mire.ptype{ComplexF64}[z^0,x,y]
+    @test Mire.inner_product(u,v,cmat) == Mire.inner_product(u,v,a,b,c) ≈ 4/3*a*b*c*(a^2*1/5)
 
+end
+
+@testset "Insulating magnetic field basis" begin
+    N = 3
+    V = Ellipsoid(3//5,4//5,6//5)
+    # check if ellipsoid throws an error:
+    @test_throws ArgumentError InsulatingMFBasis(N,V; norm=Mire.Nonorm{Rational{Int}})
+
+    #first element of basis check:
+    b = InsulatingMFBasis(N, Sphere{Rational{Int}}(), norm=Mire.Nonorm{Rational{Int}})
+    l, m, n = 1, -1, 0
+    RLM = - y
+    P1m1 = -(x^2+y^2+z^2)^(n + 1)*RLM*1//(2(n+1)*(2l+2n+3))
+    ∇vi = ∇(-Mire.vi(l,n)*RLM)
+    
+    @test b.el[1] == ∇ × (∇ × (P1m1*[x,y,z])) + ∇vi
+
+    # Numerically check if any current normal to the boundary exists:
+    j = curl.(b.el)
+
+    function normalmax(u)
+        m = 0.0
+        dotn=dot(u,[x,y,z])
+        @inbounds @fastmath for theta in 0:0.1:pi, phi in 0:0.1:2pi
+            m = max(m,abs(dotn(x=>cos(phi)*sin(theta),y=>sin(phi)*sin(theta),z=>cos(theta))))
+        end
+        return m
+    end
+    
+    jn_at_surface = normalmax.(j)
+
+    @test all( isapprox.(jn_at_surface,0, atol=1e-13))
+
+    #test LMN function
+    ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
+    @test maximum(lstor)==N-1
+    @test mstor[1] == -1
+    @test ms[1] == -1
+    @test maximum(ms) == N-2
+
+    ## todo: Bpol + ∇Φi = ∇Φe at r = 1.
+
+end
+
+@testset "Projection functions" begin
+
+    N = 7
+    V = Ellipsoid(1.1,1.0,0.9)
+
+    vbasis = LebovitzBasis(N,V).el
+    nu = length(vbasis)
+    A = spzeros(nu,nu)
+    cmat = cacheint(N,V)
+
+    # projectforce!(A,cmat,vbasis,vbasis,inertial)
+    A = projectforce(vbasis,vbasis,cmat,inertial)
+
+    # @test A ≈ B
+
+    B = Mire.projectforcet(vbasis,vbasis,cmat,inertial)
+
+    @test A ≈ B
+
+    
 end

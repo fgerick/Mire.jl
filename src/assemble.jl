@@ -1,244 +1,360 @@
 ### Functions to create matrices and assemble the full system.
 
-"""
-    projectforce!(A::AbstractArray{T, 2}, cmat::Array{T, 3}, vs::Array{Array{P, 1}, 1}, N::Integer, forcefun::Function, a::T, b::T, c::T, args...) where {T, P <: Polynomial{T}}
+# abstract type MireProblem{T,V} end
 
-DOCSTRING
 
-#Arguments:
-- `A`: pre-allocated array
-- `cmat`: pre-cached monomial integration values
-- `vs`: basis vectors
-- `N`: maximum monomial degree
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
 """
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs::Array{Array{P,1},1},
-            N::Integer, forcefun::Function, args...) where {T, P <: Polynomial{T}}
-    projectforce!(A, cmat, vs, vs, forcefun, args...)
+    HDProblem{T<:Number,Vol<:Volume{T}}
+
+Defines hydrodynamic problem.
+
+Example:
+
+```
+N = 5
+Ω = [0,0,1.0]
+V = Ellipsoid(1.1,1.0,0.9)
+problem = HDProblem(N,V,Ω,LebovitzBasis)
+```
+"""
+mutable struct HDProblem{T<:Number,Vol<:Volume{T}}
+    N::Int
+    V::Vol
+    Ω::Vector{T}
+    vbasis::VectorBasis{T,Vol}
+    cmat::Array{T,3}
+    LHS::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
+    RHS::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
 end
 
-function projectforce!(A::AbstractArray{T,2},cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-            forcefun::Function, args...) where {T, P <: Polynomial{T}}
+"""
+    MHDProblem{T<:Number,Vol<:Volume{T}} <: MireProblem{T,Vol}
 
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-    @assert n_1 == size(A,1)
-    @assert n_2 == size(A,2)
+Defines magnetohydrodynamic problem.
 
-    @inbounds for j=1:n_2
-        f = forcefun(vs_j[j],args...) #calculate f(uⱼ)
-        for i=1:n_1
-            A[i,j] = Mire.inner_product_real(cmat,vs_i[i],f)
-        end
+Example for a hybrid QG model with 3-D magnetic field with 
+conducting boundary condition and QG velocities:
+
+```
+N = 5
+Ω = [0,0,1.0]
+a,b,c = 1.1,1.0,0.9
+V = Ellipsoid(a,b,c)
+B0 = [-y/b^2,x/a^2,0] #Malkus field
+problem = MHDProblem(N,V,Ω,B0,QGBasis,ConductingMFBasis)
+```
+"""
+mutable struct MHDProblem{T,Vol<:Volume{T}}
+    N::Int
+    V::Vol
+    Ω::Vector{T}
+    Le::T
+    Lu::T
+    B0 #::Union{vptype{T},vptype{Complex{T}}}
+    vbasis #::VectorBasis{T,Vol}
+    bbasis #::VectorBasis{T,Vol}
+    cmat #::Array{T,3}
+    LHS #::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
+    RHS #::Union{AbstractMatrix{T},AbstractMatrix{Complex{T}}}
+end
+
+function HDProblem(
+                    N::Int,
+                    V::Volume{T},
+                    Ω::Vector{T},
+                    ::Type{VB},
+                ) where {T<:Number,VB<:VectorBasis}
+
+    vbasis = VB(N, V)
+    cmat = cacheint(N, V)
+    n = length(vbasis.el)
+    TM = coefficienttype(vbasis.el[1][1])
+    LHS = spzeros(TM, n, n)
+    RHS = spzeros(TM, n, n)
+
+    return HDProblem(N, V, Ω, vbasis, cmat, LHS, RHS)
+end
+
+function MHDProblem(
+                    N::Int,
+                    V::Volume{T},
+                    Ω::Vector{T},
+                    Le::T,
+                    Lu::T,
+                    B0,
+                    ::Type{VB},
+                    ::Type{BB};
+                    kwargs...
+                ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
+    
+    (T == Float64) && (N > 15) && @warn("N = $(N) with 64-bit floating point numbers will lead to inaccuricies! Consider using more accurate floats.")
+
+    vbasis = VB(N, V)
+    bbasis = BB(N, V; kwargs...)
+    cmat = cacheint(N, V)
+    nu = length(vbasis.el)
+    nb = length(bbasis.el)
+    n = nu + nb
+    TM = promote_type(coefficienttype(vbasis.el[1][1]),coefficienttype(bbasis.el[1][1]))
+    LHS = spzeros(TM, n, n)
+    RHS = spzeros(TM, n, n)
+    if norm(Ω) != 1
+        Ω /= Le*norm(Ω)
+    else
+        Ω = Ω*1/Le
     end
+    B01=vptype{TM}(B0)
+    return MHDProblem(N, V, Ω, Le, Lu, B01, vbasis, bbasis, cmat, LHS, RHS)
 end
 
+function MHDProblem(
+    N::Int,
+    V::Volume{T},
+    Ω::Vector{T},
+    Le::T,
+    B0,
+    ::Type{VB},
+    ::Type{BB};
+    kwargs...
+    ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
 
-"""
-    projectforce(N::Integer,cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-    forcefun::Function,a::T,b::T,c::T, args...) where {T, P <: Polynomial{T}}
-
-Allocates new matrix `A` and fills elements by calling
-projectforce!(A,cmat,vs_i,vs_j,forcefun, args...)
-
-where `cmat[i,j,k]` contains the integrals of monomials xⁱyʲzᵏ.
-
-#Arguments:
-- `N`: maximum monomial degree
-- `vs_i`: basis vectors to project on
-- `vs_j`: basis vectors used for `forcefun`
-- `forcefun`: function of the force, e.g. coriolis
-- `args`: other arguments needed for `forcefun`
-"""
-function projectforce(cmat::Array{T,3},vs_i::Array{Array{P,1},1},vs_j::Array{Array{P,1},1},
-        forcefun::Function, args...) where {T, P <: Polynomial{T}}
-
-    n_1 = length(vs_i)
-    n_2 = length(vs_j)
-
-    A = spzeros(T,n_1,n_2)
-
-    projectforce!(A, cmat, vs_i, vs_j, forcefun, args...)
-    return A
+    return MHDProblem(N, V, Ω, Le, T(Inf), B0, VB, BB; kwargs...)
 end
 
-projectforce(cmat::Array{T,3},vs::Array{Array{P,1},1},forcefun::Function, args...) where {T, P <: Polynomial{T}} = projectforce(cmat,vs,vs,forcefun,args...)
-
-
 """
-    assemblehd(N::Int, a::T, b::T, c::T, Ω ; cmat = cacheint(N,a,b,c), vs = vel(N,a,b,c)) where T
+    assemble!(P::HDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
 
-Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-left hand side `B` and basis vectors `vs`.
-
-#Arguments:
-- `N`: maximum monomial degree
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
+Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity basis
+`P.vbasis` on the inertial acceleration and Coriolis force.
 """
-function assemblehd(N::Int,a::T,b::T,c::T,Ω ;
-                    cmat = cacheint(N,a,b,c),
-                    vs = vel(N,a,b,c)) where T
+function assemble!(P::HDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
 
-    A = projectforce(cmat,vs,inertial)
-    B = projectforce(cmat,vs,coriolis,Ω)
-    return A,B, vs
+    if threads
+        assemblet!(P; verbose, kwargs...)
+    else
+        assembles!(P; verbose, kwargs...)
+    end
+
+    return nothing
 end
 
+function assemblet!(P::HDProblem{T,V}; verbose=false, kwargs...) where {T,V}
 
-function assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0)
+    nt = Threads.nthreads()
+    #LHS
+    if !isorthonormal(P.vbasis)
+        itemps = [Int[] for i=1:nt]
+        jtemps = [Int[] for i=1:nt]
+        valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+        @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t 
+        P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+        verbose && println("assemble LHS done!")
+    else
+        P.LHS = one(P.LHS)
+    end
+    
+    
+    #RHS
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+    @sync projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nu, nu)
+    verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+    return nothing
+end
+
+function assembles!(P::HDProblem{T,V}; verbose=false, kwargs...) where {T,V} 
+
+    vbasis = P.vbasis.el
+
+    if !isorthonormal(P.vbasis) 
+        P.LHS = projectforce(vbasis, vbasis, P.cmat, inertial) #∂u/∂t
+    else
+        P.LHS = one(P.LHS)
+    end
+
+    P.RHS = projectforce(vbasis, vbasis, P.cmat, coriolis, P.Ω) #Ω×u
+
+    return nothing
+end
+
+"""
+    assemble!(P::MHDProblem{T,V}) where {T,V}
+
+Assembles the matrices `P.LHS` and `P.RHS`, i.e. projecting the velocity and
+magnetic field bases on the inertial acceleration, Coriolis force, Lorentz force
+and mgnetic advection.
+"""
+function assemble!(P::MHDProblem{T,V}; threads=false, verbose=false, kwargs...) where {T,V}
+    if threads
+        assemblet!(P; verbose, kwargs...)
+    else
+        assembles!(P; verbose, kwargs...)
+    end
+    return nothing
+end
+
+function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
+    
     nu = length(vbasis)
     nb = length(bbasis)
-    nmat = nu+nb
-    projectforce!(view(A,1:nu,1:nu),cmat,vbasis,vbasis, inertial) #∂u/∂t
-    projectforce!(view(A,nu+1:nmat,nu+1:nmat),cmat,bbasis,bbasis, inertial) #∂j/∂t
-    projectforce!(view(B,1:nu,1:nu),cmat,vbasis,vbasis,coriolis,Ω) #Ω×u
-    projectforce!(view(B,1:nu,nu+1:nmat),cmat,vbasis,bbasis,lorentz,b0) #j×b
-    projectforce!(view(B,nu+1:nmat,1:nu),cmat,bbasis,vbasis,advection,b0)
-    nothing
+    nmat = nu + nb
+    cmat = P.cmat
+
+    nt = Threads.nthreads()
+    
+    if !(Mire.isorthonormal(P.vbasis) && Mire.isorthonormal(P.bbasis))
+
+        itemps = [Int[] for i=1:nt]
+        jtemps = [Int[] for i=1:nt]
+        valtemps = [eltype(P.LHS)[] for i=1:nt]
+        @sync begin 
+            projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
+            
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
+            else
+                projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+            end
+            verbose && println("assemble LHS done!")
+        end
+            P.LHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+    else
+        P.LHS = one(P.LHS)
+    end
+
+        #right hand side:
+
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+
+        projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+        verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+        projectforcet!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+        verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
+
+        projectforcet!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, advection, P.B0; kwargs...)
+        verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
+
+        if !isinf(P.Lu)
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+            else
+                projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
+            end
+            verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
+        end
+    @sync true
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+
 end
 
-"""
-    assemblemhd(N::Int, a::T, b::T, c::T, Ω, b0; dtype::DataType=BigFloat) where T
+function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
+    
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
+    nu = length(vbasis)
+    nmat = size(P.LHS,1)
 
-Assemble the sparse matrices of the MHD mode problem. Returns right hand side `A`,
-left hand side `B` and basis vectors `vbasis`.
+    itemps,jtemps,valtemps = Int[], Int[], eltype(P.LHS)[]
+    if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
+        projectforce!(0, 0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
 
-#Arguments:
-- `N`: maximum monomial degree
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `b0`: mean magnetic field vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
-"""
-function assemblemhd(N::Int,a::T,b::T,c::T,Ω,b0;
-                     cmat = cacheint(N,a,b,c)) where T
+        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+            ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+            LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+            ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
+            Mire.projectforce_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,P.cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
+        else
+            projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
+        end
+        P.LHS = sparse(itemps,jtemps,valtemps, nmat, nmat)
+    else
+        P.LHS = one(P.LHS)
+    end
 
-    vbasis = vel(N,a,b,c)
-    bbasis = vbasis
-    A,B = assemblemhd(Ω,b0,vbasis,bbasis,cmat)
-    return A,B, vbasis
+    itemps, jtemps, valtemps = Int[], Int[], eltype(P.RHS)[]
+    projectforce!(0,0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...) #Ω×u
+    projectforce!(0, nu, itemps, jtemps, valtemps, P.cmat, vbasis, bbasis, lorentz, P.B0; kwargs...) #j×b
+    projectforce!(nu, 0, itemps, jtemps, valtemps, P.cmat,  bbasis, vbasis, advection, P.B0; kwargs...)     
+
+    if !isinf(P.Lu)
+        projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...)
+    end
+
+    P.RHS = sparse(itemps, jtemps, valtemps, nmat, nmat)
+
+    return nothing
 end
 
-function assemblemhd(Ω,b0,vbasis,bbasis,cmat::Array{T,3}) where T
+function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
+    @assert typeof(P.vbasis) <: Union{QGIMBasis,QGRIMBasis}
+    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis, InsMFCBasis}
+    vbasis = P.vbasis.el
+    bbasis = P.bbasis.el
+    
     nu = length(vbasis)
     nb = length(bbasis)
-    nmat = nu+nb
-    A = spzeros(T,nmat,nmat)
-    B = spzeros(T,nmat,nmat)
-    assemblemhd!(A,B,cmat,vbasis,bbasis,Ω,b0)
-    return A,B
-end
+    nmat = nu + nb
+    cmat = P.cmat
+    
 
+    P.LHS = one(P.LHS) #only true for the given (normalized) bases
+    
+    #right hand side:
+    ls,ms,ns,lstor,mstor,nstor = Mire.LMN(P.bbasis)
 
+    N = P.N
+    msu = Mire.NM(P.vbasis)[2]
+    
 
-"""
-    assemblehd_hybrid(N2D::Int, N3D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat) where T
+    LS,MS = vcat(ls,lstor), vcat(ms, mstor)
+    ISPT = vcat(fill(true,length(ls)),fill(false,length(lstor)))
 
-Assemble the sparse matrices of the hybrid QG and 3D MHD mode problem.
-Returns right hand side `A`,left hand side `B` and basis vectors `bbasis` and `vbasis_qg`.
-
-#Arguments:
-- `N2D`: maximum monomial degree of QG velocity
-- `N3D`: maximum monomial degree of 3D magnetic field
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
-"""
-function assemblemhd_hybrid(N2D::Int,N3D::Int,a::T,b::T,c::T,Ω,b0;
-                     cmat = cacheint(N3D,a,b,c)) where T
-    # n_mat = Mire.n_u(N3D)
-    bbasis = Mire.vel(N3D,a,b,c)
-    n_mat = length(bbasis)
-    vbasis_qg = Mire.qg_vel(N2D,a,b,c)
-    n_mat_qg = length(vs_qg)
-
-
-    nmat=n_mat+n_mat_qg
-    A = spzeros(T,nmat,nmat)
-    B = spzeros(T,nmat,nmat)
-
-    assemblemhd!(A,B,cmat,vbasis_qg,bbasis,Ω,b0)
-    return A,B, bbasis, vbasis_qg
-end
-
-"""
-    assemblehd_qg(N2D::Int, a::T, b::T, c::T, Ω ; dtype::DataType=BigFloat) where T
-
-Assemble the sparse matrices of the QG MHD mode problem.
-Returns right hand side `A`,left hand side `B` and basis vectors `vs_qg`.
-
-#Arguments:
-- `N2D`: maximum monomial degree of QG velocity/magnetic field
-- `a`: semi-axis x
-- `b`: semi-axis y
-- `c`: semi-axis z
-- `Ω`: rotation vector
-- `dtype`: datatype, default `BigFloat` for integration of monomials
-"""
-function assemblemhd_qg(N2D::Int, a::T, b::T, c::T, Ω, b0;
-                     cmat = cacheint(N2D,a,b,c)) where T
-    vs_qg = Mire.qg_vel(N2D, a, b, c)
-    n_mat_qg = length(vs_qg)
-
-    nmat = 2n_mat_qg
-    A = spzeros(T, nmat, nmat)
-    B = spzeros(T, nmat, nmat)
-    assemblemhd!(A,B,cmat,vs_qg,vs_qg,Ω,b0)
-
-    return A, B, vs_qg
-end
-
-
-#Quagmire (2D reduced equations)
-
-function assemblemhd_quag(N::Int, a::T, b::T, c::T, Ω::T, A0;
-                     cmat = cacheint2D(N,a,b,c)) where T
-    vs_qg = Mire.qg_vel(N, a, b, c)
-    n_mat_qg = length(vs_qg)
-
-    nmat = 2n_mat_qg
-    A = spzeros(T, nmat, nmat)
-    B = spzeros(T, nmat, nmat)
-    projectforce_2D!(view(A, 1:n_mat_qg, 1:n_mat_qg),           N, cmat, Mire.poly_inertial,a,b,c)
-    projectforce_2D!(view(A, n_mat_qg+1:nmat, n_mat_qg+1:nmat), N, cmat, Mire.poly_inertialmag,a,b,c)
-    projectforce_2D!(view(B, 1:n_mat_qg, 1:n_mat_qg),           N, cmat, Mire.poly_coriolis,a,b,c, Ω)
-    projectforce_2D!(view(B, 1:n_mat_qg, n_mat_qg+1:nmat),      N, cmat, Mire.poly_lorentz,a,b,c, A0)
-    projectforce_2D!(view(B, n_mat_qg+1:nmat, 1:n_mat_qg),      N, cmat, Mire.poly_advection,a,b,c, A0)
-
-    return A, B, vs_qg
-end
-
-
-
-function projectforce_2D!(A::AbstractArray{T,2},N::Integer, cmat, polyfun::Function,a::T,b::T,c::T, args...) where T
-
-    combos = qg_combos(N)
-
-    n_A = length(combos)
-    @assert size(A,1)==n_A
-    @assert size(A,2)==n_A
-
-    @inbounds for j=1:n_A
-        p = polyfun(combos[j]...,a,b,c,args...)
-        for i=1:n_A
-            A[i,j] = inner_product_2D(cmat,p,Π(combos[i]...),a,b,c)
-        end
+    nt = Threads.nthreads()
+    itemps = [Int[] for i=1:nt]
+    jtemps = [Int[] for i=1:nt]
+    valtemps = [eltype(P.LHS)[] for i=1:nt]
+    @sync begin
+    if typeof(P.vbasis) <: QGIMBasis
+        projectcoriolisqgt!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, P.Ω; kwargs...) #Ω×u
+    else
+        projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, coriolis, P.Ω; kwargs...)
     end
+    verbose && println("assemble 2/Le ∫ uᵢ⋅Ω×uⱼ dV done!")
+
+    projectlorentzqgt!(0, nu, itemps, jtemps, valtemps, cmat, vbasis, bbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT, b0isp; kwargs...) #j×b
+    verbose && println("assemble ∫ uᵢ⋅(∇×B₀×Bⱼ + ∇×Bⱼ×B₀) dV done!")
+
+    projectinductionqgt!(nu, 0, itemps, jtemps, valtemps, cmat, bbasis, vbasis, P.B0, LS, MS, msu, lb0, mb0, ISPT, b0isp; kwargs...)
+    verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
+
+    if !isinf(P.Lu)
+        ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
+        LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
+        ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+        Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
+        verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
+    end
+    end
+    P.RHS = sparse(vcat(itemps...),vcat(jtemps...),vcat(valtemps...), nmat, nmat)
+
+    return nothing
 end
 
 
-function projectforce_2D(N::Integer,cmat, polyfun::Function, a::T,b::T,c::T, args...) where T
-    n_combos = n_unknown(N)
-    A = spzeros(T,n_combos,n_combos)
-    projectforce_2D!(A,N,cmat, polyfun,a,b,c,args...)
-    return A
-end
+
