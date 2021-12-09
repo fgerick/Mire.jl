@@ -172,8 +172,13 @@ function projectforcet_symmetric_neighbours!(
     end
 end
 
+
 function projectforce_symmetric_neighbours!(
-    A,
+    i0,
+    j0,
+    itemps,
+    jtemps,
+    valtemps,
     cmat,
     vs_i,
     vs_j,
@@ -194,9 +199,13 @@ function projectforce_symmetric_neighbours!(
             if (ls[i]==ls[j]) && (ms[i]==ms[j]) && (ispt[i]==ispt[j])
                 aij =  inner_product(vs_i[i], f, cmat)
                 if abs(aij) > thresh
-                    A[i,j] = aij
+                    push!(itemps,i+i0)
+                    push!(jtemps,j+j0)
+                    push!(valtemps,aij)
                     if i!=j
-                       A[j,i] = aij
+                        push!(itemps,j+j0)
+                        push!(jtemps,i+i0)
+                        push!(valtemps,aij)
                     end
                 end
             end
@@ -204,6 +213,7 @@ function projectforce_symmetric_neighbours!(
         end
     end
 end
+
 
 function projectlorentzqgt!(i0, j0, itemps, jtemps, valtemps, cmat, vbasis, bbasis, b0, ls, ms, msu, lb0, mb0, ispoloidal, b0isp; thresh=eps())
 

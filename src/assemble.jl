@@ -277,8 +277,8 @@ function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
         if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
             ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
             LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-            ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
-            Mire.projectforce_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,P.cmat,bbasis,bbasis, inertial,LS,MS,ispt; kwargs...) #∂j/∂t
+            ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+            Mire.projectforce_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,P.cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
         else
             projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
         end
