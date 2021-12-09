@@ -4,7 +4,6 @@
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://fgerick.github.io/Mire.jl/dev/)
 [![](https://github.com/fgerick/Mire.jl/workflows/CI/badge.svg)](https://github.com/fgerick/Mire.jl/actions)
-[![](https://travis-ci.com/fgerick/Mire.jl.svg?token=NJNkFC9qALxxCxMBhjwi&branch=master)](https://travis-ci.com/fgerick/Mire.jl)
 [![codecov](https://codecov.io/gh/fgerick/Mire.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/fgerick/Mire.jl)
 
 
