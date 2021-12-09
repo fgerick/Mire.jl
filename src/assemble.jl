@@ -217,7 +217,7 @@ function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
         @sync begin 
             projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
             
-            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
@@ -248,7 +248,7 @@ function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
         verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
 
         if !isinf(P.Lu)
-            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+            if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
                 ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
                 LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
                 ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
@@ -274,7 +274,7 @@ function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
     if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
         projectforce!(0, 0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
 
-        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsMFCBasis}
+        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
             ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
             LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
             ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(ls)))
@@ -303,7 +303,7 @@ end
 
 function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false, kwargs...) where {T,V}
     @assert typeof(P.vbasis) <: Union{QGIMBasis,QGRIMBasis}
-    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis, InsMFCBasis}
+    @assert typeof(P.bbasis) <: Union{InsMFONCBasis, InsulatingMFBasis, InsulatingMFCBasis}
     vbasis = P.vbasis.el
     bbasis = P.bbasis.el
     

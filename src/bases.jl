@@ -357,9 +357,7 @@ end
 
 
 function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
-    if typeof(V) != Sphere{T}
-        return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
-    end
+	
 	r2 = x^2 + y^2 + z^2
 
 	N-=1
