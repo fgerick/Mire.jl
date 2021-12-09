@@ -236,11 +236,11 @@ const ConductingMFBasis = LebovitzBasis
 
 
 """
-InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+InsulatingMFBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
 
 Basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
 """
-struct InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+struct InsulatingMFBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
     el::Vector{vptype{T}}
@@ -258,7 +258,7 @@ function bpol_g21(l,m,n; kwargs...)
 	return ∇×(∇×(Pₗₘₙ*[x,y,z])) - vi(l,n)*∇(Rₗᵐ)
 end
 
-function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
+function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
@@ -344,11 +344,11 @@ end
 
 
 """
-InsulatingMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
 
 Complex basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
 """
-struct InsulatingMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+struct InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
     el::Vector{vptype{Complex{T}}}
@@ -356,7 +356,7 @@ struct InsulatingMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 end
 
 
-function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
+function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
@@ -437,7 +437,7 @@ end
 
 
 
-struct InsMFONCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+struct InsMFONCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
     el::Vector{vptype{Complex{T}}}
@@ -462,7 +462,7 @@ btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × 
 bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
 
 
-function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Volume{T}; kwargs...) where T
+function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Sphere{T}; kwargs...) where T
 	r2 = x^2+y^2+z^2
 	N-=1
 
@@ -503,7 +503,7 @@ end
 
 
 
-struct InsMFONBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+struct InsMFONBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
     V::Vol
     el::Vector{vptype{T}}
@@ -511,7 +511,7 @@ struct InsMFONBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 end
 
 
-function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
+function basisvectors(::Type{InsMFONBasis}, N::Int, V::Sphere{T}; kwargs...) where T
 	N-=1
 	r2 = x^2+y^2+z^2
 	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
