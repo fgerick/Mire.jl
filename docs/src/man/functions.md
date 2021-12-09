@@ -19,6 +19,26 @@ Sphere
 LebovitzBasis
 ```
 
+```@docs
+QGBasis
+```
+
+```@docs
+QGIMBasis
+```
+
+```@docs
+QGRIMBasis
+```
+
+```@docs
+ConductingMFBasis
+```
+
+```@docs
+InsulatingMFBasis
+```
+
 ## Setting up the problem
 
 ```@docs
@@ -52,8 +72,4 @@ projectforcet!
 
 ```@docs
 inner_product
-```
-
-```@docs
-uqg
 ```

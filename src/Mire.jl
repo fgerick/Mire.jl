@@ -26,7 +26,7 @@ export Volume, Ellipsoid, Sphere
 
 include("bases.jl")
 export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis
-export ConductingMFBasis, InsulatingMFBasis, InsMFCBasis, InsMFONBasis, InsMFONCBasis
+export ConductingMFBasis, InsulatingMFBasis, InsulatingMFCBasis
 
 include("assemble.jl")
 export HDProblem, MHDProblem, assemble!

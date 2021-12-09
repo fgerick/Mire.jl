@@ -9,10 +9,13 @@ Defines `abstract type` of a vector basis to for a `T,V` so that `V=Volume{T}`.
 """
 abstract type VectorBasis{T,V} end
 
+
+
+
 """
     LebovitzBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 
-Basis of 3-D vector field, so that \$\\mathbf{u}\\cdot\\vec{n} = 0\$ at \$\\partial\\mathcal{V}\$
+Basis of 3-D vector field, so that \$\\mathbf{u}\\cdot\\mathbf{n} = 0\$ at \$\\partial\\mathcal{V}\$
 and \$\\nabla\\cdot\\mathbf{u} = 0\$ after Lebovitz (1989).
 """
 struct LebovitzBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
@@ -21,75 +24,6 @@ struct LebovitzBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
     el::Vector{vptype{T}}
     orthonorm::Bool
 end
-"""
-    QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-
-Basis of QG vector field (Gerick et al., 2020).
-"""
-struct QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{T}}
-    orthonorm::Bool
-end
-
-struct QGIMBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{Complex{T}}}
-    orthonorm::Bool
-end
-
-struct QGRIMBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{T}}
-    orthonorm::Bool
-end
-
-const ConductingMFBasis = LebovitzBasis
-
-"""
-InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-
-Basis of insulating magnetic fields. For now only for `Vol<:Sphere{T}`!
-"""
-struct InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{T}}
-    orthonorm::Bool
-end
-
-struct InsMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{Complex{T}}}
-    orthonorm::Bool
-end
-
-struct InsMFONBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{T}}
-    orthonorm::Bool
-end
-
-struct InsMFONCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{Complex{T}}}
-    orthonorm::Bool
-end
-
-struct GBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
-    N::Int
-    V::Vol
-    el::Vector{vptype{T}}
-    orthonorm::Bool
-end
-
-
 
 ### Lebovitz (1989) basis
 
@@ -107,23 +41,15 @@ v2(n::Int, m::Int, l::Int, V::Volume{T}) where {T} = ∇(Π(n, m, l) * F(V)) × 
 v3(n::Int, m::Int, l::Int, V::Volume{T}) where {T} = ∇(Π(n, m, l) * F(V)) × ez
 
 
-"""
-    combos(N::Int)
-
-Computes all combos i,j,k satisfying i+j+k < N. Returns two `Vector{Vector{Int}}` with
-the first one all `[i,j,k]` with `k=0`, and the second one with `1<=k<N`.
-"""
+#Computes all combos i,j,k satisfying i+j+k < N. Returns two `Vector{Vector{Int}}` with
+#the first one all `[i,j,k]` with `k=0`, and the second one with `1<=k<N`.
 function combos(N::Int)
     [[i, j, k] for i = 0:N for j = 0:N for k = 0 if (i + j + k < N)],
     [[i, j, k] for i = 0:N for j = 0:N for k = 1:N if (i + j + k < N)]
 end
 
 
-"""
-    basisvectors(::Type{LebovitzBasis}, N::Int, V::Volume{T}) where T
-
-Compute all velocity basis vectors for a given maximal degree `N` (Lebovitz 1989, eq. 41-42)
-"""
+# Compute all velocity basis vectors for a given maximal degree `N` (Lebovitz 1989, eq. 41-42)
 function basisvectors(::Type{LebovitzBasis}, N::Int, V::Volume{T}) where {T}
     gp, hp = combos(N)
     v_1 = [v1(h..., V) for h in vcat(gp, hp)]
@@ -134,16 +60,25 @@ function basisvectors(::Type{LebovitzBasis}, N::Int, V::Volume{T}) where {T}
 end
 
 
-## QG velocity basis (Gerick et al., 2020)
+
+
+
+"""
+    QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+
+Basis of QG vector field (Gerick et al., 2020), so that \$\\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$.
+"""
+struct QGBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
 
 qg_combos(N::Integer) = [[i, j] for i = 0:N for j = 0:N if (i + j < N)]
-qg_combos2(N::Integer) = (N==0) ? [[0,0]] : vcat(qg_combos2(N-1),[[i,j] for i=0:N for j=0:N if (N-1<i+j<=N)]) #sorted
+qg_combos_sorted(N::Integer) = (N==0) ? [[0,0]] : vcat(qg_combos2(N-1),[[i,j] for i=0:N for j=0:N if (N-1<i+j<=N)])
 
-"""
-    uqg(n::Integer, m::Integer, V::Volume{T}) where T
-
-Generate basis vector \$\\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$
-"""
+#Generate basis vector \$\\mathbf{u}=\\nabla(h^3x^ny^m)\\times\\nabla(z/h)\$
 function uqg(n::Integer, m::Integer, V::Volume{T}) where {T}
 
     if typeof(V) <: Sphere
@@ -166,8 +101,20 @@ function basisvectors(::Type{QGBasis}, N::Int, V::Volume{T}) where {T}
     return [uqg(ci..., V) for ci in cs]
 end
 
-#QG inertial mode basis
-CSR=CartesianSphericalHarmonics
+
+"""
+    QGIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+
+Basis of complex QG inertial modes (Maffei et al., 2017). This basis is orthonormal.
+"""
+struct QGIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{Complex{T}}}
+    orthonorm::Bool
+end
+
+CSH=CartesianSphericalHarmonics
 
 function jacobi(x, n::Integer, a::R, b::R) where R <: Number
     ox = one(x*a*n)
@@ -204,18 +151,6 @@ function convert_polynom(S::Type{T},p) where T
 	return sum(S.(c).*m)
 end
 
-function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
-	h² = 1-x^2-y^2
-	ez =   [0,0,1]
-	h∇h =   [-x,-y,0]
-	s² = x^2 + y^2
-	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
-
-	ψp =   J * ((m < 0) ? CSR.sinsinpoly(-m, x, y) : CSR.cossinpoly(m, x, y))
-	ψp = convert_polynom(T,ψp/sqrt(prefac(big(n),big(abs(m)))))
-
-	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
-end
 
 function prefac(n::BigInt,m::BigInt)
 	ω = -1/(n*(2n+2m+1)+m/2+m^2/6)
@@ -230,28 +165,54 @@ function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
 	s² = x^2 + y^2
 	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
 
-	ψp =   J * (im*CSR.sinsinpoly(big(m),x,y) + CSR.cossinpoly(big(m),x,y))
+	ψp =   J * (im*CSH.sinsinpoly(big(m),x,y) + CSH.cossinpoly(big(m),x,y))
 	ψp = convert_polynom(complex(T),ψp/sqrt(prefac(big(n),big(m))))
 
 	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
-
-# qg_basis(N,V) = [basiselement(n,m,V) for m=-N:N for n=0:(N-abs(m))÷2]
-
 function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
     return [basiselementc(n,m,V) for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
 end
 
-function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
-end
 
 function NM(b::QGIMBasis)
 	N = b.N
 	ms = [m for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
 	ns = [n for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
 	return ns,ms
+end
+
+
+
+"""
+    QGRIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+
+Real basis similar to the QG inertial modes (Maffei et al., 2017). They are not the solutions to the QG inertial mode equation and they are not orthogonal.
+"""
+struct QGRIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
+
+function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
+    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
+end
+
+function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
+	h² = 1-x^2-y^2
+	ez =   [0,0,1]
+	h∇h =   [-x,-y,0]
+	s² = x^2 + y^2
+	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
+
+	ψp =   J * ((m < 0) ? CSH.sinsinpoly(-m, x, y) : CSH.cossinpoly(m, x, y))
+	ψp = convert_polynom(T,ψp/sqrt(prefac(big(n),big(abs(m)))))
+
+	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
 function NM(b::QGRIMBasis)
@@ -262,31 +223,29 @@ function NM(b::QGRIMBasis)
 end
 
 
+#MAGNETIC FIELD BASES:
 
-## Geostrophic basis
+
+"""
+	ConductingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+
+Basis of 3-D magnetic field, so that \$\\mathbf{B}\\cdot\\vec{n} = 0\$ at \$\\partial\\mathcal{V}\$
+and \$\\nabla\\cdot\\mathbf{B} = 0\$ after Lebovitz (1989). It is exactly the same as `LebovitzBasis`.
+"""
+const ConductingMFBasis = LebovitzBasis
 
 
-function geo_veln(n::Integer,V::Volume{T}) where T
+"""
+InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 
-    if typeof(V) <: Sphere
-        a, b, c = one(T), one(T), one(T)
-    elseif typeof(V) <: Ellipsoid
-        a, b, c = V.a, V.b, V.c
-    else
-        error("Geostrophic velocity not implemented for this Volume")
-    end
-
-    h2 = c^2*(1-x^2/a^2-y^2/b^2)
-    ez = [0,0,1]
-    hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
-    return (3+2n)//3*h2^n*z^0 * hgradh×ez
+Basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
+"""
+struct InsulatingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
 end
-
-function basisvectors(::Type{GBasis}, N::Int, V::Volume{T}) where T
-    return [geo_veln(n,V) for n in 0:N÷2]
-end
-
-## Insulating 3-D magnetic field basis in the sphere (Gerick et al., 2021)
 
 #coefficients of interior and exterior potential field correction
 vi(l::Int, n::Int) = -(l + 1)//(4l*n + 4l + 2n + 2)
@@ -362,7 +321,42 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Volume{T}; norm=Schm
     return vcat(b_pol, b_tor)
 end
 
-function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
+
+function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
+	r2 = x^2 + y^2 + z^2
+    N = P.N-1
+	#l,m,n for poloidal field vectors
+
+	#l,m,n for poloidal field vectors
+	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
+
+
+	#l,m,n for toroidal field vectors
+	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
+
+
+    return ls,ms,ns,lstor,mstor,nstor
+end
+
+
+"""
+InsulatingMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+
+Complex basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
+"""
+struct InsulatingMFCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{Complex{T}}}
+    orthonorm::Bool
+end
+
+
+function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
@@ -424,7 +418,7 @@ function basisvectors(::Type{InsMFCBasis}, N::Int, V::Volume{T}; norm=Schmidt{T}
     return vcat(b_pol, b_tor)
 end
 
-function LMN(P::InsMFCBasis{T,V}) where {T,V}
+function LMN(P::InsulatingMFCBasis{T,V}) where {T,V}
 	r2 = x^2 + y^2 + z^2
     N = P.N-1
 	#l,m,n for poloidal field vectors
@@ -441,24 +435,13 @@ function LMN(P::InsMFCBasis{T,V}) where {T,V}
     return ls,ms,ns,lstor,mstor,nstor
 end
 
-function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
-    N = P.N-1
-	#l,m,n for poloidal field vectors
-
-	#l,m,n for poloidal field vectors
-	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
 
 
-	#l,m,n for toroidal field vectors
-	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-
-
-    return ls,ms,ns,lstor,mstor,nstor
+struct InsMFONCBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{Complex{T}}}
+    orthonorm::Bool
 end
 
 
@@ -474,46 +457,9 @@ function k(::Type{T}, l::Integer, n::Integer) where T
 end
 
 const 𝐫 = [x, y, z]
+
 btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫)
 bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
-
-function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
-	N-=1
-	r2 = x^2+y^2+z^2
-	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-
-	NPOL = length(ls)
-
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-	NTOR = length(lstor)
-
-	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),ns,ls,ms)
-	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),nstor,lstor,mstor)
-    return vcat(BP,BT)
-	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
-end
-
-
-function LMN(P::InsMFONBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
-    N = P.N-1
-
-	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-    return ls,ms,ns,lstor,mstor,nstor
-end
-
 
 
 function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Volume{T}; kwargs...) where T
@@ -556,8 +502,55 @@ function LMN(P::InsMFONCBasis{T,V}) where {T,V}
 end
 
 
+
+struct InsMFONBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+    N::Int
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
+
+function basisvectors(::Type{InsMFONBasis}, N::Int, V::Volume{T}; kwargs...) where T
+	N-=1
+	r2 = x^2+y^2+z^2
+	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+
+	NPOL = length(ls)
+
+	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+
+	NTOR = length(lstor)
+
+	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),ns,ls,ms)
+	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),nstor,lstor,mstor)
+    return vcat(BP,BT)
+	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
+end
+
+
+function LMN(P::InsMFONBasis{T,V}) where {T,V}
+	r2 = x^2 + y^2 + z^2
+    N = P.N-1
+
+	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+
+	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+
+    return ls,ms,ns,lstor,mstor,nstor
+end
+
+
 # Generate constructors for each defined basis
-for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsMFCBasis, :GBasis)
+for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
@@ -577,3 +570,36 @@ end
 
 
 isorthonormal(B::T) where T <: VectorBasis = B.orthonorm
+
+
+
+## Geostrophic basis
+
+# struct GBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
+#     N::Int
+#     V::Vol
+#     el::Vector{vptype{T}}
+#     orthonorm::Bool
+# end
+
+
+# function geo_veln(n::Integer,V::Volume{T}) where T
+
+#     if typeof(V) <: Sphere
+#         a, b, c = one(T), one(T), one(T)
+#     elseif typeof(V) <: Ellipsoid
+#         a, b, c = V.a, V.b, V.c
+#     else
+#         error("Geostrophic velocity not implemented for this Volume")
+#     end
+
+#     h2 = c^2*(1-x^2/a^2-y^2/b^2)
+#     ez = [0,0,1]
+#     hgradh = [-c^2*x/a^2,-c^2*y/b^2,0]
+#     return (3+2n)//3*h2^n*z^0 * hgradh×ez
+# end
+
+# function basisvectors(::Type{GBasis}, N::Int, V::Volume{T}) where T
+#     return [geo_veln(n,V) for n in 0:N÷2]
+# end
+
