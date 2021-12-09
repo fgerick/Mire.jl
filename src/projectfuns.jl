@@ -1,5 +1,10 @@
 ## low level functions that project the basis elements on a force function (forcefun)
 
+"""
+    projectforce(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
+
+Project basis `vs_i` onto the forcing `forcefun(vs_j, args...)` using precached monomials in `cmat`.
+"""
 function projectforce(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
     itemps = Int[]
     jtemps = Int[]
@@ -8,6 +13,12 @@ function projectforce(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
     return sparse(itemps,jtemps,valtemps, length(vs_i), length(vs_j))
 end
 
+"""
+    projectforce!(i0, j0, itemps, jtemps, valtemps, cmat, vs_i, vs_j, forcefun, args...; verbose=false, thresh=10eps())
+
+Project basis `vs_i` onto the forcing `forcefun(vs_j, args...)`. Pushes indices and values of non-zero entries into the `itemps`,`jtemps` and `valtems` arrays.
+`i0` and `j0` are the origin of indices (useful for combining multiple equations, should be 0 to have no shift in indices). See `projectforce` to construct a sparse array from the indices and values.
+"""
 function projectforce!(
     i0,
     j0,
@@ -52,7 +63,7 @@ end
 """
     projectforcet!(args...)
 
-Multithreaded projection 
+Multithreaded version of `projectforce!`. Input has to be adapted to number of threads!
 """
 function projectforcet! end
 
@@ -100,7 +111,11 @@ function projectforcet!(
 end
 
 
+"""
+    projectforcet(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
 
+Project basis `vs_i` onto the forcing `forcefun(vs_j, args...)` using precached monomials in `cmat` and multiple threads.
+"""
 function projectforcet(vs_i, vs_j, cmat, forcefun, args...; kwargs...)
     nt = Threads.nthreads()
     itemps = [Int[] for i=1:nt]
