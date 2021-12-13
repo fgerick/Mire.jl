@@ -29,7 +29,7 @@ export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis
 export ConductingMFBasis, InsulatingMFBasis, InsulatingMFCBasis
 
 include("assemble.jl")
-export HDProblem, MHDProblem, assemble!
+export MireProblem, HDProblem, MHDProblem, assemble!
 
 include("projectfuns.jl")
 export projectforce, projectforce!, projectforcet
