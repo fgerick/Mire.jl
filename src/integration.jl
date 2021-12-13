@@ -8,12 +8,12 @@ function int_monomial_ellipsoid(p::Monomial,a::T,b::T,c::T) where T
 end
 
 """
-    int_monomial_ellipsoid(i::BigInt, j::BigInt, k::BigInt, a::T, b::T, c::T; dtype::DataType=BigFloat) where T
+    int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::T, b::T, c::T) where T
 
 Integrate a monomial over the ellipsoids volume \$\\int x^iy^jz^k dV\$.
 
 !!! warning "Missing factor"
-     The factor \$\\pi\$ is removed in the integration due to numerical reasons.
+     The factor \$\\pi\$ is removed in the integration to be able to use exact integration using `Rational`.
      Remember to reintroduce it when the actual value of the integration is needed!
 
 #Arguments:
@@ -24,7 +24,7 @@ Integrate a monomial over the ellipsoids volume \$\\int x^iy^jz^k dV\$.
 - `b`: Semi-axis in `y`
 - `c`: Semi-axis in `z`
 """
-function int_monomial_ellipsoid(i::Integer,j::Integer,k::Integer,a::T,b::T,c::T) where T
+function int_monomial_ellipsoid(i::Integer, j::Integer, k::Integer, a::T, b::T, c::T) where T
     if iseven(i) && iseven(j) && iseven(k)
         I = i÷2
         J = j÷2
@@ -87,9 +87,9 @@ int_polynomial_ellipsoid(p,a::Real,b::Real,c::Real) = sum(coefficients(p).*int_m
 """
     int_polynomial_ellipsoid(p, cmat)
 
-DOCSTRING
+Integrate a polynomial over an ellipsoidal volume, using precached monomial integrations in `cmat`
 """
-function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
+function int_polynomial_ellipsoid(p::Polynomial{S}, cmat::Array{T,3}) where {T,S}
     cs = coefficients(p)
     ip = zero(T)*zero(S)
     exps = exponents.(monomial.(terms(p)))
@@ -102,7 +102,12 @@ function int_polynomial_ellipsoid(p::Polynomial{S},cmat::Array{T,3}) where {T,S}
 end
 
 
+"""
+    inner_product(u, v, cmat)
 
+Inner product in an ellipsoidal volume \$\\int  \\mathbf{u}\\cdot \\mathbf{v} dV\$, 
+using precached monomial integrations in `cmat`.
+"""
 function inner_product(u, v, cmat)
     out = zero(eltype(cmat))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
     @inbounds for (ui,vi) = zip(u,v)
@@ -120,11 +125,16 @@ function inner_product(u, v, cmat)
 end
 
 """
-    inner_product(u,v,a,b,c)
+    inner_product(u, v, a, b, c)
 
-Defines inner product in an ellipsoidal volume \$\\int\\langle u,v\\rangle dV\$.
+Inner product in an ellipsoidal volume \$\\int  \\mathbf{u}\\cdot \\mathbf{v} dV\$.
+
+!!! warning "Missing factor"
+     The factor \$\\pi\$ is removed in the integration to be able to use exact integration using `Rational`.
+     Remember to reintroduce it when the actual value of the integration is needed!
+
 """
-function inner_product(u,v,a,b,c)
+function inner_product(u, v, a, b, c)
 
     out = zero(promote_type(typeof(a),typeof(b),typeof(c)))*zero(coefficienttype(first(u)))*zero(coefficienttype(first(v)))
     @inbounds for (ui,vi) = zip(u,v)

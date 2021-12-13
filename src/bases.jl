@@ -229,7 +229,7 @@ end
 """
 	ConductingMFBasis{T<:Number,Vol<:Volume{T}} <: VectorBasis{T,Vol}
 
-Basis of 3-D magnetic field, so that \$\\mathbf{B}\\cdot\\vec{n} = 0\$ at \$\\partial\\mathcal{V}\$
+Basis of 3-D magnetic field, so that \$\\mathbf{B}\\cdot\\mathbf{n} = 0\$ at \$\\partial\\mathcal{V}\$
 and \$\\nabla\\cdot\\mathbf{B} = 0\$ after Lebovitz (1989). It is exactly the same as `LebovitzBasis`.
 """
 const ConductingMFBasis = LebovitzBasis
@@ -238,7 +238,7 @@ const ConductingMFBasis = LebovitzBasis
 """
 InsulatingMFBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
 
-Basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
+Basis of insulating magnetic fields following Gerick et al. (2021). For now, only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
 """
 struct InsulatingMFBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
@@ -346,7 +346,7 @@ end
 """
 InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
 
-Complex basis of insulating magnetic fields following Gerick et al. (2021). For now only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
+Complex basis of insulating magnetic fields following Gerick et al. (2021). For now, only for `Vol<:Sphere{T}`, i.e. in a spherical domain. 
 """
 struct InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
