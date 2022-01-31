@@ -10,7 +10,14 @@
 
 Solve for inviscid (magneto)hydrodynamic modes in rapidly rotating spheres and ellipsoids using a Galerkin method with basis vectors constructed from Cartesian monomials. The code supports fully 3-D, fully quasi-geostrophic (QG) and a hybrid model with QG velocities and 3-D magnetic field perturbations. The magnetic field satisfies the perfectly conducting boundary condition in the ellipsoid. In the sphere the insulating boundary condition is also available. The velocity field satisfies the non-penetrating boundary condition, valid for inviscid fluids.
 
-Check out the [documentation](https://fgerick.github.io/Mire.jl/dev/) for help on installation and examples (the documentation will improve with time).
+The [documentation](https://fgerick.github.io/Mire.jl/dev/) is still work in progress, but the examples given by the [tests](https://github.com/fgerick/Mire.jl/blob/master/test/modes.jl) will work.
+## Installation
+
+From the Julia REPL type:
+```julia
+]add https://github.com/fgerick/CartesianSphericalHarmonics.jl.git
+]add https://github.com/fgerick/Mire.jl.git
+```
 
 ## Questions
 
