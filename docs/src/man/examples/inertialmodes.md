@@ -1,7 +1,4 @@
-# Examples
-
-
-## Inertial modes in a triaxial ellipsoid
+# Inertial modes in an ellipsoid
 
 We want to solve the inertial mode equation
 
@@ -10,7 +7,7 @@ $$\partial_t \mathbf{u} = -2\mathbf{\Omega}\times\mathbf{u}-\nabla p$$
 by expanding the velocity in a Cartesian polynomial basis and projecting onto these basis vectors following [Lebovitz (1989)](https://www.tandfonline.com/doi/abs/10.1080/03091928908208913).
 
 
-### Setting up the problem
+## Setting up the problem
 
 
 ```julia
@@ -23,7 +20,7 @@ The triaxial ellipsoid is defined by
 
 $$\frac{x^2}{a^2}+\frac{y^2}{b^2}+\frac{z^2}{c^2}=1.$$
 
-The rotation axis is taken to be along $z$, so that $\mathbf{\Omega}=(0,0,1)$. We truncate at a maximum monomial polynomial degree $N = 3$, so that each monomial $x^y^jz^k$ has $i+j+k\leq N$.
+The rotation axis is taken to be along $z$, so that $\mathbf{\Omega}=(0,0,1)$. We truncate at a maximum monomial polynomial degree $N = 3$, so that each monomial $x^i y^j z^k$ has $i+j+k\leq N$.
 
 
 ```julia
@@ -55,7 +52,7 @@ $$\omega B\mathbf{x}=A\mathbf{x}.$$
 With `B = p.LHS` and `A = p.RHS`.
 
 
-### Solving for eigen modes
+## Solving for eigen modes
 
 There are several ways to solve for eigen solutions of the generalized eigen problem. For small matrices we can simply solve directly
 
@@ -71,22 +68,22 @@ evals, evecs = eigen(A, B)
 
 Given the eigen values `evals` and eigen vectors `evecs`.
 
-The eigen vectors $\mathbf{x}_i$ contain the coefficients $x_{ji}$, so that the eigen velocity $\mathbf{v}_i$ is given by
+The eigen vectors $\mathbf{x}_i$ contain the coefficients $x_{ji}$, so that the eigen velocity $\mathbf{u}_i$ is given by
 
-$$\mathbf{v}_i = \sum_{j}x_{ji}\mathbf{u}_j,$$
+$$\mathbf{u}_i = \sum_{j}x_{ji}\tilde{\mathbf{u}}_j,$$
 
-where $\mathbf{u}_j$ is the $j$-th basis vector in `uj`, given in `p.vbasis.el[j]`.
+where $\tilde{\mathbf{u}}_j$ is the $j$-th basis vector, given in `p.vbasis.el[j]`.
 
-We can reconstruct the eigenvelocities $\mathbf{v}_k$ for all $k$ by calling `velocities`:
+We can reconstruct the eigenvelocities $\mathbf{u}_i$ for all $i$ by calling `velocities`:
 
 
 ```julia
-v = velocities(p.vbasis.el, evecs)
+u = velocities(p.vbasis.el, evecs)
 ```
 
-`v` is now an array of 3-D vectors where the components are cartesian polynomials with complex coefficients.
+`u` is now an array of 3-D vectors where the components are Cartesian polynomials with complex coefficients.
 
-### Plotting the mode
+## Plotting the mode
 
 An example of plotting streamlines at equatorial and meridional sections of one of the modes.
 
@@ -122,7 +119,7 @@ println("ω = ",imag.(evals[k]),"𝕚")
 And to plot 
 
 ```julia
-plotmode(a,b,c,v[k], density=1.4, cmap=:plasma)
+plotmode(a,b,c,u[k], density=1.4, cmap=:plasma)
 ```
 
 
