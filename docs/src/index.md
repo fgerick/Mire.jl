@@ -11,6 +11,7 @@ Some example usage is given in the section Documentation and in the [Continuous 
 Install `Mire.jl` from the `julia` `REPL` prompt with
 
 ```julia
+] add https://github.com/fgerick/CartesianSphericalHarmonics.jl.git 
 ] add https://github.com/fgerick/Mire.jl.git
 ```
 
