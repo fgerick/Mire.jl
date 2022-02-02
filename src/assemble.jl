@@ -78,7 +78,7 @@ end
 function MHDProblem(
                     N::Int,
                     V::Volume{T},
-                    Ω::Vector{T},
+                    Ω,
                     Le::T,
                     Lu::T,
                     B0,
@@ -101,7 +101,7 @@ function MHDProblem(
     if norm(Ω) != 1
         Ω /= Le*norm(Ω)
     else
-        Ω = Ω*1/Le
+        Ω = T.(Ω)*1/Le
     end
     B01=vptype{TM}(B0)
     return MHDProblem(N, V, Ω, Le, Lu, B01, vbasis, bbasis, cmat, LHS, RHS)
@@ -110,7 +110,7 @@ end
 function MHDProblem(
     N::Int,
     V::Volume{T},
-    Ω::Vector{T},
+    Ω,
     Le::T,
     B0,
     ::Type{VB},
