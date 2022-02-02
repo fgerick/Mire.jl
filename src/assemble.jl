@@ -61,7 +61,7 @@ end
 function HDProblem(
                     N::Int,
                     V::Volume{T},
-                    Ω::Vector{T},
+                    Ω,
                     ::Type{VB},
                 ) where {T<:Number,VB<:VectorBasis}
 
@@ -72,13 +72,13 @@ function HDProblem(
     LHS = spzeros(TM, n, n)
     RHS = spzeros(TM, n, n)
 
-    return HDProblem(N, V, Ω, vbasis, cmat, LHS, RHS)
+    return HDProblem(N, V, T.(Ω), vbasis, cmat, LHS, RHS)
 end
 
 function MHDProblem(
                     N::Int,
                     V::Volume{T},
-                    Ω::Vector{T},
+                    Ω,
                     Le::T,
                     Lu::T,
                     B0,
@@ -101,7 +101,7 @@ function MHDProblem(
     if norm(Ω) != 1
         Ω /= Le*norm(Ω)
     else
-        Ω = Ω*1/Le
+        Ω = T.(Ω)*1/Le
     end
     B01=vptype{TM}(B0)
     return MHDProblem(N, V, Ω, Le, Lu, B01, vbasis, bbasis, cmat, LHS, RHS)
@@ -110,7 +110,7 @@ end
 function MHDProblem(
     N::Int,
     V::Volume{T},
-    Ω::Vector{T},
+    Ω,
     Le::T,
     B0,
     ::Type{VB},
