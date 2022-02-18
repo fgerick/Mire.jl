@@ -612,8 +612,83 @@ function basisvectors(::Type{PVMFBasis}, N::Int, V::Volume{T}; kwargs...) where 
 end
 
 
-# Generate constructors for each defined basis
-for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis)
+
+## Basis following Ivers (2017) 
+
+L(V::Ellipsoid) = [1/V.a 0 0
+			0 1/V.b 0
+			0 0 1/V.c]
+
+L(V::Sphere) = I
+
+const r² = 𝐫⋅𝐫
+
+function s(l,m,n,V::Volume; kwargs...)
+	∇̇ = Del(V)
+	Plm = poincare((1-r²)*r²^n*rlm(l,m,x,y,z; kwargs...),V)
+	𝐫̇ = L(V)*𝐫
+	return inv(L(V))*(∇̇×(∇̇×(Plm*𝐫̇)))
+end
+
+function t(l,m,n,V::Volume; kwargs...)
+	∇̇ = Del(V)
+	Tlm = poincare(r²^n*rlm(l,m,x,y,z; kwargs...),V)
+	𝐫̇ = L(V)*𝐫
+	return inv(L(V))*(∇̇×(Tlm*𝐫̇))
+end
+
+struct IversBasisC{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
+	N::Int
+	V::Vol
+	el::Vector{Mire.vptype{Complex{T}}}
+	orthonorm::Bool
+end
+
+function basisvectors(::Type{IversBasisC}, N::Int, V::Volume{T}; norm=Mire.Schmidt{Float64}) where T
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:((N+1-l)÷2-1)]
+	lmn_t = [(l,m,n) for l = 1:N for m = 0:l for n = 0:((N-l)÷2)]
+	u_p = [s(l,m,n,V; real=false, norm) for (l,m,n) in lmn_p]
+	u_t = [t(l,m,n,V; real=false, norm) for (l,m,n) in lmn_t]
+	
+	return vcat(u_p,u_t)
+end
+	
+
+function LMN(B::IversBasisC)
+	N = B.N
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:((N+1-l)÷2-1)]
+	lmn_t = [(l,m,n) for l = 1:N for m = 0:l for n = 0:((N-l)÷2)]
+	return lmn_p,lmn_t
+end
+	
+struct IversBasis{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
+	N::Int
+	V::Vol
+	el::Vector{Mire.vptype{T}}
+	orthonorm::Bool
+end
+
+function basisvectors(::Type{IversBasis}, N::Int, V::Volume{T}; norm=Mire.Schmidt{Float64}) where T
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:((N+1-l)÷2-1)]
+	lmn_t = [(l,m,n) for l = 1:N for m = -l:l for n = 0:((N-l)÷2)]
+	u_p = [s(l,m,n,V; real=true, norm) for (l,m,n) in lmn_p]
+	u_t = [t(l,m,n,V; real=true, norm) for (l,m,n) in lmn_t]
+	
+	return vcat(u_p,u_t)
+end
+	
+
+function LMN(B::IversBasis)
+	N = B.N
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:((N+1-l)÷2-1)]
+	lmn_t = [(l,m,n) for l = 1:N for m = -l:l for n = 0:((N-l)÷2)]
+	return lmn_p,lmn_t
+end
+	
+## Generate constructors for each defined basis
+
+
+for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis, :IversBasis, :IversBasisC)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
@@ -633,8 +708,6 @@ end
 
 
 isorthonormal(B::T) where T <: VectorBasis = B.orthonorm
-
-
 
 ## Geostrophic basis
 

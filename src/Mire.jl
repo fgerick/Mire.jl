@@ -25,7 +25,7 @@ include("volumes.jl")
 export Volume, Ellipsoid, Sphere
 
 include("bases.jl")
-export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis
+export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis, IversBasis, IversBasisC
 export ConductingMFBasis, InsulatingMFBasis, InsulatingMFCBasis
 
 include("assemble.jl")
@@ -58,6 +58,21 @@ laplacian(ψ) = ∂(∂(ψ,x),x) + ∂(∂(ψ,y),y) + ∂(∂(ψ,z),z)
 
 advecterm(u,v) = [u[1]*∂(v[i],x) + u[2]*∂(v[i],y) + u[3]*∂(v[i],z) for i = 1:3]
 dot(u, ::Type{∇}) = v->map(vi->u[1]*∂(vi,x) + u[2]*∂(vi,y) + u[3]*∂(vi,z), v)
+
+# use nicer curls in ellipsoid
+struct Del{T} 
+	a::T
+	b::T
+	c::T
+end
+
+Del(V::Sphere) = ∇
+Del(V::Ellipsoid) = Del(V.a,V.b,V.c)
+
+(D::Del)(ψ::T) where T = [∂(ψ,x)*D.a, ∂(ψ,y)*D.b, ∂(ψ,z)*D.c]
+
+dot(D::Del, u) = ∂(u[1],x)*D.a + ∂(u[2],y)*D.b + ∂(u[3],z)*D.c
+(×)(D::Del, u) = [∂(u[3],y)*D.b - ∂(u[2],z)*D.c, ∂(u[1],z)*D.c - ∂(u[3],x)*D.a, ∂(u[2],x)*D.a - ∂(u[1],y)*D.b] 
 
 # Cartesian unit vectors
 const ex = [1,0,0]

@@ -81,3 +81,25 @@ end
     ## todo: Bpol + ∇Φi = ∇Φe at r = 1.
 
 end
+
+@testset "Ivers basis" begin
+    
+    Ω = [0,0,1]
+    V = Ellipsoid(1.3,0.9,1.1)
+    N = 3
+    evals = []
+
+    prob1 = HDProblem(N,V, Ω, LebovitzBasis)
+    assemble!(prob1)
+    esol1 = eigen(Matrix(prob1.RHS), Matrix(prob1.LHS))
+    ω1 = esol1.values
+
+    prob2 = HDProblem(N,V, Ω, IversBasis)
+    assemble!(prob2)
+    esol2 = eigen(Matrix(prob2.RHS), Matrix(prob2.LHS))
+    ω2 = esol2.values
+
+    @test maximum(map(u->maximum(maxdegree.(u)),prob2.vbasis.el)) == N
+    @test sort(abs.(ω1)) ≈ sort(abs.(ω2))
+
+end
