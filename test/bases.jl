@@ -71,12 +71,14 @@ end
 
     @test all( isapprox.(jn_at_surface,0, atol=1e-13))
 
+   
+    @test maximum(map(u->maximum(maxdegree.(u)),b.el)) == N 
     #test LMN function
-    ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
-    @test maximum(lstor)==N-1
-    @test mstor[1] == -1
-    @test ms[1] == -1
-    @test maximum(ms) == N-2
+    # ls,ms,ns,lstor,mstor,nstor = Mire.LMN(b)
+    # @test maximum(lstor)==N-1
+    # @test mstor[1] == -1
+    # @test ms[1] == -1
+    # @test maximum(ms) == N-2
 
     ## todo: Bpol + ∇Φi = ∇Φe at r = 1.
 

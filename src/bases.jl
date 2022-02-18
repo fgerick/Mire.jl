@@ -252,10 +252,24 @@ vi(l::Int, n::Int) = -(l + 1)//(4l*n + 4l + 2n + 2)
 ve(l::Int, n::Int) = l//((2*l + 1)*(2l + 2n + 3))
 
 function bpol_g21(l,m,n; kwargs...)
-	r² = x^2 + y^2 + z^2
 	Rₗᵐ = rlm(l,m,x,y,z; kwargs...)
 	Pₗₘₙ = -r²^(n+1)*Rₗᵐ / (2(n+1)*(2l+2n+3))
-	return ∇×(∇×(Pₗₘₙ*[x,y,z])) - vi(l,n)*∇(Rₗᵐ)
+	return ∇×(∇×(Pₗₘₙ*𝐫)) - vi(l,n)*∇(Rₗᵐ)
+end
+
+function btor_g21(l,m,n; kwargs...)
+	Rₗᵐ = rlm(l,m,x,y,z; kwargs...)
+	Tₗₘₙ = (1-r²)*r²^n*Rₗᵐ
+	return ∇×(Tₗₘₙ*𝐫)
+end
+
+function LMN(P::InsulatingMFBasis)
+    N = P.N
+
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:(N-l+1)÷2-1]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m = -l:l for n = 0:(N-l)÷2-1]
+	
+	return lmn_p,lmn_t
 end
 
 function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
@@ -263,85 +277,14 @@ function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Sphere{T}; norm=Schm
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
 
-	N-=1 # B of degree N instead of curl(B) of degree N
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:(N-l+1)÷2-1]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m = -l:l for n = 0:(N-l)÷2-1]
+	
+	bpols = [bpol_g21(lmn...; real=true, norm) for lmn in lmn_p]
+	btors = [btor_g21(lmn...; real=true, norm) for lmn in lmn_t]
 
-	r2 = x^2 + y^2 + z^2
-
-	#l,m,n for poloidal field vectors
-	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-
-
-	#l,m,n for toroidal field vectors
-	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-
-	NPOL = length(ls)
-	NTOR = length(lstor)
-
-	#dummy variables to get datatypes for preallocation
-	Qlm0 = r2^ns[1]*rlm(ls[1],ms[1],x,y,z; norm)
-	Slm0 = (1-r2)*r2^nstor[1]*rlm(lstor[1],mstor[1],x,y,z; norm)
-	Rlm0 = rlm(ls[1],ms[1],x,y,z; norm)*x^0*y^0*z^0
-
-	j_tor0 = curl(Qlm0*[x,y,z])
-
-	# preallocate vectors
-	j_tor,b_pol = Vector{typeof(j_tor0)}(undef,NPOL),Vector{typeof(j_tor0)}(undef,NPOL)
-	j_pol,b_tor = Vector{typeof(j_tor0)}(undef,NTOR),Vector{typeof(j_tor0)}(undef,NTOR)
-
-	Qlm = zeros(typeof(Qlm0),NPOL)
-	Slm = zeros(typeof(Slm0),NTOR)
-	Rlm = zeros(typeof(Rlm0),NPOL)
-	Plm = zeros(typeof(Qlm0),NPOL)
-
-	#calculate all poloidal field vectors
-	Threads.@threads for i = 1:NPOL
-		n,m,l = ns[i],ms[i],ls[i]
-	    Qlm[i] = r2^n*rlm(l,m,x,y,z,norm=norm)
-		Rlm[i] = rlm(l,m,x,y,z,norm=norm)*x^0*y^0*z^0
-		j_tor[i] = curl(Qlm[i]*[x,y,z])
-		Plm[i] =  -r2^(n+1)*Rlm[i]/(2(n+1)*(2l+2n+3))
-		b_pol[i] = curl(curl(Plm[i]*[x,y,z]))
-		α = -vi(ls[i] ,ns[i])
-		Vi = α*Rlm[i]
-		b_pol[i] .+= ∇(Vi)
-	end
-
-	#calculate all toroidal field vectors
-	@inbounds @simd for i = 1:NTOR
-		Slm[i] = (1-r2)*r2^nstor[i]*rlm(lstor[i],mstor[i],x,y,z,norm=norm)
-		b_tor[i] = curl(Slm[i]*[x,y,z])
-		j_pol[i] = curl(b_tor[i])
-	end
-
-    # return j_pol, j_tor, b_pol, b_tor, Plm, Qlm, Slm, Rlm, ls, ms, ns, lstor, mstor, nstor
-    return vcat(b_pol, b_tor)
+	return vcat(bpols,btors)
 end
-
-
-function LMN(P::InsulatingMFBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
-    N = P.N-1
-	#l,m,n for poloidal field vectors
-
-	#l,m,n for poloidal field vectors
-	lstor = [l  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	mstor = [m  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	nstor = [n  for l in 1:N for m in -N:N for n in 0:(N-l)÷2 if abs(m)<=l]
-
-
-	#l,m,n for toroidal field vectors
-	ls = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ms = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ns  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-
-
-    return ls,ms,ns,lstor,mstor,nstor
-end
-
 
 """
 InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
@@ -357,80 +300,26 @@ end
 
 
 function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
+    if typeof(V) != Sphere{T}
+        return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
+    end
+
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:(N-l+1)÷2-1]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m = 0:l for n = 0:(N-l)÷2-1]
 	
-	r2 = x^2 + y^2 + z^2
+	bpols = [bpol_g21(lmn...; real=false, norm) for lmn in lmn_p]
+	btors = [btor_g21(lmn...; real=false, norm) for lmn in lmn_t]
 
-	N-=1
-	#l,m,n for poloidal field vectors
-	lstor = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	mstor = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	nstor = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-
-
-	#l,m,n for toroidal field vectors
-	ls = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ms = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ns  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-
-
-	NPOL = length(ls)
-	NTOR = length(lstor)
-
-	#dummy variables to get datatypes for preallocation
-	Qlm0 = r2^ns[1]*rlm(ls[1],ms[1],x,y,z; norm,real=false)
-	Slm0 = (1-r2)*r2^nstor[1]*rlm(lstor[1],mstor[1],x,y,z; norm, real=false)
-	Rlm0 = rlm(ls[1],ms[1],x,y,z; norm, real=false)*x^0*y^0*z^0
-
-	j_tor0 = curl(Qlm0*[x,y,z])
-
-	# preallocate vectors
-	j_tor,b_pol = Vector{typeof(j_tor0)}(undef,NPOL),Vector{typeof(j_tor0)}(undef,NPOL)
-	j_pol,b_tor = Vector{typeof(j_tor0)}(undef,NTOR),Vector{typeof(j_tor0)}(undef,NTOR)
-
-	Qlm = zeros(typeof(Qlm0),NPOL)
-	Slm = zeros(typeof(Slm0),NTOR)
-	Rlm = zeros(typeof(Rlm0),NPOL)
-	Plm = zeros(typeof(Qlm0),NPOL)
-
-	#calculate all poloidal field vectors
-	Threads.@threads for i = 1:NPOL
-		n,m,l = ns[i],ms[i],ls[i]
-	    Qlm[i] = r2^n*rlm(l,m,x,y,z; norm=norm, real=false)
-		Rlm[i] = rlm(l,m,x,y,z; norm=norm, real=false)*x^0*y^0*z^0
-		j_tor[i] = curl(Qlm[i]*[x,y,z])
-		Plm[i] =  -r2^(n+1)*Rlm[i]/(2(n+1)*(2l+2n+3))
-		b_pol[i] = curl(curl(Plm[i]*[x,y,z]))
-		α = -vi(ls[i] ,ns[i])
-		Vi = α*Rlm[i]
-		b_pol[i] .+= ∇(Vi)
-	end
-
-	#calculate all toroidal field vectors
-	@inbounds @simd for i = 1:NTOR
-		Slm[i] = (1-r2)*r2^nstor[i]*rlm(lstor[i],mstor[i],x,y,z; norm=norm,real=false)
-		b_tor[i] = curl(Slm[i]*[x,y,z])
-		j_pol[i] = curl(b_tor[i])
-	end
-
-    # return j_pol, j_tor, b_pol, b_tor, Plm, Qlm, Slm, Rlm, ls, ms, ns, lstor, mstor, nstor
-    return vcat(b_pol, b_tor)
+	return vcat(bpols,btors)
 end
 
-function LMN(P::InsulatingMFCBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
-    N = P.N-1
-	#l,m,n for poloidal field vectors
-	lstor = [l  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	mstor = [m  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
-	nstor = [n  for l in 1:N for m in 0:N for n in 0:(N-l)÷2 if abs(m)<=l]
+function LMN(P::InsulatingMFCBasis)
+    N = P.N
 
-
-	#l,m,n for toroidal field vectors
-	ls = [l for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ms = [m for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-	ns  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 0:((N+1-l)÷2-1) if abs(m)<=l]
-
-    return ls,ms,ns,lstor,mstor,nstor
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:(N-l+1)÷2-1]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m = 0:l for n = 0:(N-l)÷2-1]
+	
+	return lmn_p,lmn_t
 end
 
 
