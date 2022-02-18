@@ -218,9 +218,11 @@ function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
             projectforcet!(0, 0, itemps, jtemps, valtemps, cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
             
             if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
-                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                lmnsp, lmnst = LMN(P.bbasis)
+                LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
+                MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
+                 
+                ispt = vcat(zeros(Bool,length(lmnsp)),ones(Bool,length(lmnst)))
                 projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
             else
                 projectforcet!(nu, nu, itemps, jtemps, valtemps, cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
@@ -249,9 +251,11 @@ function assemblet!(P::MHDProblem{T,V}; verbose=false, kwargs...) where {T,V}
 
         if !isinf(P.Lu)
             if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
-                ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-                LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-                ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+                lmnsp, lmnst = LMN(P.bbasis)
+                LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
+                MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
+                 
+                ispt = vcat(zeros(Bool,length(lmnsp)),ones(Bool,length(lmnst)))
                 Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
             else
                 projectforcet!(nu, nu, itemps, jtemps, valtemps,  cmat, bbasis, bbasis, b->1/P.Lu*diffusion(b); kwargs...) #∂j/∂t
@@ -275,9 +279,11 @@ function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
         projectforce!(0, 0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
 
         if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
-            ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-            LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-            ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+            lmnsp, lmnst = LMN(P.bbasis)
+            LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
+            MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
+             
+            ispt = vcat(zeros(Bool,length(lmnsp)),ones(Bool,length(lmnst)))
             Mire.projectforce_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,P.cmat,bbasis,bbasis, inertial,LS,MS,ispt) #∂j/∂t
         else
             projectforce!(nu, nu, itemps, jtemps, valtemps, P.cmat, bbasis, bbasis, inertial; kwargs...) #∂j/∂t
@@ -316,14 +322,16 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     P.LHS = one(P.LHS) #only true for the given (normalized) bases
     
     #right hand side:
-    ls,ms,ns,lstor,mstor,nstor = Mire.LMN(P.bbasis)
+    lmnsp, lmnst = LMN(P.bbasis)
+    LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
+    MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
+     
+    ISPT = vcat(zeros(Bool,length(lmnsp)),ones(Bool,length(lmnst)))
 
     N = P.N
     msu = Mire.NM(P.vbasis)[2]
     
 
-    LS,MS = vcat(ls,lstor), vcat(ms, mstor)
-    ISPT = vcat(fill(true,length(ls)),fill(false,length(lstor)))
 
     nt = Threads.nthreads()
     itemps = [Int[] for i=1:nt]
@@ -344,9 +352,11 @@ function assemblespecialized!(P::MHDProblem{T,V}, lb0, mb0, b0isp; verbose=false
     verbose && println("assemble ∫ Bᵢ⋅∇×uⱼ×B₀ done!")
 
     if !isinf(P.Lu)
-        ls,ms,ns,lstor,mstor,nstor = LMN(P.bbasis)
-        LS,MS,NS = vcat(ls,lstor), vcat(ms,mstor), vcat(ns,nstor)
-        ispt = vcat(zeros(Bool,length(ls)),ones(Bool,length(lstor)))
+        lmnsp, lmnst = LMN(P.bbasis)
+        LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
+        MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
+         
+        ispt = vcat(zeros(Bool,length(lmnsp)),ones(Bool,length(lmnst)))
         Mire.projectforcet_symmetric_neighbours!(nu,nu,itemps,jtemps,valtemps,cmat,bbasis,bbasis, b->1/P.Lu*diffusion(b),LS,MS,ispt) #∂j/∂t
         verbose && println("assemble 1/Lu ∫ Bᵢ⋅ΔBⱼ² dV done!")
     end
