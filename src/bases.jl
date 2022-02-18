@@ -533,7 +533,7 @@ struct IversBasisC{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
 	orthonorm::Bool
 end
 
-function basisvectors(::Type{IversBasisC}, N::Int, V::Volume{T}; norm=Mire.Schmidt{Float64}) where T
+function basisvectors(::Type{IversBasisC}, N::Int, V::Volume{T}; norm=Mire.Schmidt{T}) where T
 	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:((N+1-l)÷2-1)]
 	lmn_t = [(l,m,n) for l = 1:N for m = 0:l for n = 0:((N-l)÷2)]
 	u_p = [s(l,m,n,V; real=false, norm) for (l,m,n) in lmn_p]
@@ -557,7 +557,7 @@ struct IversBasis{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
 	orthonorm::Bool
 end
 
-function basisvectors(::Type{IversBasis}, N::Int, V::Volume{T}; norm=Mire.Schmidt{Float64}) where T
+function basisvectors(::Type{IversBasis}, N::Int, V::Volume{T}; norm=Mire.Schmidt{T}) where T
 	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:((N+1-l)÷2-1)]
 	lmn_t = [(l,m,n) for l = 1:N for m = -l:l for n = 0:((N-l)÷2)]
 	u_p = [s(l,m,n,V; real=true, norm) for (l,m,n) in lmn_p]
