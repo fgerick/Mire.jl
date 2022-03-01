@@ -33,6 +33,10 @@ Ellipsoid(a::Int, b::Int, c::Int) = Ellipsoid(a // 1, b // 1, c // 1)
 Default: `Sphere(T)` gives a `Sphere{Float64}()`. For other types use, e.g.
 `Sphere{Rational{BigInt}}()`.
 """
-struct Sphere{T} <: Volume{T} end
+struct Sphere{T} <: Volume{T} 
+    r₀::T
+end
 
+Sphere{T}() where T = Sphere{T}(one(T))
 Sphere() = Sphere{Float64}()
+

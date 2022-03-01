@@ -8,7 +8,6 @@ using CartesianSphericalHarmonics
 using ProgressMeter
 @reexport using SparseArrays
 using SpecialFunctions
-using StaticArrays
 @reexport using TypedPolynomials
 
 export x, y, z, r, ∇, Δ, laplacian, divergence, curl, advecterm

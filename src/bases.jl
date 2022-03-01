@@ -510,11 +510,14 @@ L(V::Ellipsoid) = [1/V.a 0 0
 
 L(V::Sphere) = I
 
+radius(V::Sphere) = V.r₀
+radius(V::Ellipsoid) = 1 #todo for the moment
+
 const r² = 𝐫⋅𝐫
 
 function s(l,m,n,V::Volume; kwargs...)
 	∇̇ = Del(V)
-	Plm = poincare((1-r²)*r²^n*rlm(l,m,x,y,z; kwargs...),V)
+	Plm = poincare((radius(V)^2-r²)*r²^n*rlm(l,m,x,y,z; kwargs...),V)
 	𝐫̇ = L(V)*𝐫
 	return inv(L(V))*(∇̇×(∇̇×(Plm*𝐫̇)))
 end
