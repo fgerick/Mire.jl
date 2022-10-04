@@ -172,14 +172,14 @@ function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
 end
 
 function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselementc(n,m,V) for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+    return [basiselementc(n,m,V) for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
 end
 
 
 function NM(b::QGIMBasis)
 	N = b.N
-	ms = [m for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
-	ns = [n for m=0:(N-1) for n=1:(N-abs(m)-1)÷2 ]
+	ms = [m for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
+	ns = [n for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
 	return ns,ms
 end
 
@@ -353,20 +353,11 @@ function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Sphere{T}; kwargs...) wh
 	r2 = x^2+y^2+z^2
 	N-=1
 
-	ls = [l  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnsp = [(l,m,n)  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	NPOL = length(ls)
-
-	lstor = [l for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-	NTOR = length(lstor)
-
-	BP = map((n,l,m)->bpol(T,n,m,l; real=false, kwargs...),ns,ls,ms)
-	BT = map((n,l,m)->btor(T,n,m,l; real=false, kwargs...),nstor,lstor,mstor)
+	BP = map((n,l,m)->bpol(T,n,m,l; real=false, kwargs...),lmnsp)
+	BT = map((n,l,m)->btor(T,n,m,l; real=false, kwargs...),lmnst)
     return vcat(BP,BT)
 	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
 end
@@ -374,18 +365,13 @@ end
 
 
 function LMN(P::InsMFONCBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
+	# r2 = x^2 + y^2 + z^2
     N = P.N-1
 
-	ls = [l  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnsp = [(l,m,n)  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	lstor = [l for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-    return ls,ms,ns,lstor,mstor,nstor
+	return lmnsp,lmnst
 end
 
 
@@ -400,39 +386,23 @@ end
 
 function basisvectors(::Type{InsMFONBasis}, N::Int, V::Sphere{T}; kwargs...) where T
 	N-=1
-	r2 = x^2+y^2+z^2
-	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 
-	NPOL = length(ls)
+	lmnsp = [(l,m,n)  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-	NTOR = length(lstor)
-
-	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),ns,ls,ms)
-	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),nstor,lstor,mstor)
+	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),lmnsp)
+	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),lmnst)
     return vcat(BP,BT)
 	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
 end
 
 
 function LMN(P::InsMFONBasis{T,V}) where {T,V}
-	r2 = x^2 + y^2 + z^2
     N = P.N-1
-
-	ls = [l  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ms = [m  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	ns = [n  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-
-	lstor = [l for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	mstor = [m for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-	nstor  = [n for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
-
-    return ls,ms,ns,lstor,mstor,nstor
+	lmnsp = [(l,m,n)  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	
+	return lmnsp, lmnst
 end
 
 #pseudo vacuum BC (Vidal & Cebron, 2021)
