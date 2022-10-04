@@ -345,19 +345,18 @@ end
 
 const 𝐫 = [x, y, z]
 
-btor(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫)
-bpol(::Type{T}, n::Integer, m::Integer, l::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
+btor(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (h(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫)
+bpol(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
 
 
 function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Sphere{T}; kwargs...) where T
-	r2 = x^2+y^2+z^2
 	N-=1
 
 	lmnsp = [(l,m,n)  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	lmnst = [(l,m,n) for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	BP = map((n,l,m)->bpol(T,n,m,l; real=false, kwargs...),lmnsp)
-	BT = map((n,l,m)->btor(T,n,m,l; real=false, kwargs...),lmnst)
+	BP = map(lmn->bpol(T,lmn...; real=false, kwargs...),lmnsp)
+	BT = map(lmn->btor(T,lmn...; real=false, kwargs...),lmnst)
     return vcat(BP,BT)
 	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
 end
@@ -371,7 +370,7 @@ function LMN(P::InsMFONCBasis{T,V}) where {T,V}
 	lmnsp = [(l,m,n)  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	lmnst = [(l,m,n) for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	return lmnsp,lmnst
+	return lmnsp, lmnst
 end
 
 
@@ -390,10 +389,9 @@ function basisvectors(::Type{InsMFONBasis}, N::Int, V::Sphere{T}; kwargs...) whe
 	lmnsp = [(l,m,n)  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
 	lmnst = [(l,m,n) for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
-	BP = map((n,l,m)->bpol(T,n,m,l; kwargs...),lmnsp)
-	BT = map((n,l,m)->btor(T,n,m,l; kwargs...),lmnst)
+	BP = map(lmn->bpol(T,lmn...; kwargs...),lmnsp)
+	BT = map(lmn->btor(T,lmn...; kwargs...),lmnst)
     return vcat(BP,BT)
-	# return BP, BT, ls, ms, ns, lstor,mstor,nstor
 end
 
 
