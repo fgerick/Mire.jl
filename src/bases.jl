@@ -242,6 +242,7 @@ Basis of insulating magnetic fields following Gerick et al. (2021). For now, onl
 """
 struct InsulatingMFBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
+	m
     V::Vol
     el::Vector{vptype{T}}
     orthonorm::Bool
@@ -265,20 +266,21 @@ end
 
 function LMN(P::InsulatingMFBasis)
     N = P.N
+	m = P.m
 
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:(N-l+1)÷2-1]
-	lmn_t = [(l,m,n) for l = 1:(N-2) for m = -l:l for n = 0:(N-l)÷2-1]
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m in m for n = 0:(N-l+1)÷2-1 if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m in m for n = 0:(N-l)÷2-1 if abs(m)<=l]
 	
 	return lmn_p,lmn_t
 end
 
-function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
+function basisvectors(::Type{InsulatingMFBasis}, N::Int, V::Sphere{T}; m=-N:N, norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
 
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:(N-l+1)÷2-1]
-	lmn_t = [(l,m,n) for l = 1:(N-2) for m = -l:l for n = 0:(N-l)÷2-1]
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m in m for n = 0:(N-l+1)÷2-1 if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m in m for n = 0:(N-l)÷2-1 if abs(m)<=l]
 	
 	bpols = [bpol_g21(lmn...; real=true, norm) for lmn in lmn_p]
 	btors = [btor_g21(lmn...; real=true, norm) for lmn in lmn_t]
@@ -377,17 +379,18 @@ end
 
 struct InsMFONBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
+	m
     V::Vol
     el::Vector{vptype{T}}
     orthonorm::Bool
 end
 
 
-function basisvectors(::Type{InsMFONBasis}, N::Int, V::Sphere{T}; kwargs...) where T
-	N-=1
+function basisvectors(::Type{InsMFONBasis}, N::Int, V::Sphere{T}; m=-N:N, kwargs...) where T
+	# N-=1
 
-	lmnsp = [(l,m,n)  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	lmnst = [(l,m,n) for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	lmnsp = [(l,m,n)  for l in 1:(N-1) for m in m for n in 1:(N-l+1)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-2) for m in m for n in 1:((N-l)÷2) if abs(m)<=l]
 
 	BP = map(lmn->bpol(T,lmn...; kwargs...),lmnsp)
 	BT = map(lmn->btor(T,lmn...; kwargs...),lmnst)
@@ -396,9 +399,10 @@ end
 
 
 function LMN(P::InsMFONBasis{T,V}) where {T,V}
-    N = P.N-1
-	lmnsp = [(l,m,n)  for l in 1:N for m in -N:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	lmnst = [(l,m,n) for l in 1:(N-1) for m in -(N-1):(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+    N = P.N
+	m = P.m
+	lmnsp = [(l,m,n)  for l in 1:(N-1) for m in m for n in 1:(N-l+1)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-2) for m in m for n in 1:((N-l)÷2) if abs(m)<=l]
 	
 	return lmnsp, lmnst
 end
@@ -499,6 +503,7 @@ end
 
 struct IversBasisC{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
 	N::Int
+	m
 	V::Vol
 	el::Vector{Mire.vptype{Complex{T}}}
 	orthonorm::Bool
@@ -523,14 +528,15 @@ end
 	
 struct IversBasis{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
 	N::Int
+	m
 	V::Vol
 	el::Vector{Mire.vptype{T}}
 	orthonorm::Bool
 end
 
-function basisvectors(::Type{IversBasis}, N::Int, V::Volume{T}; norm=Mire.Schmidt{T}) where T
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:((N+1-l)÷2-1)]
-	lmn_t = [(l,m,n) for l = 1:N for m = -l:l for n = 0:((N-l)÷2)]
+function basisvectors(::Type{IversBasis}, N::Int, V::Volume{T}; norm=Mire.Schmidt{T}, m=-N:N) where T
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m in m for n = 0:((N+1-l)÷2-1) if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:N for m in m for n = 0:((N-l)÷2) if abs(m)<=l]
 	u_p = [s(l,m,n,V; real=true, norm) for (l,m,n) in lmn_p]
 	u_t = [t(l,m,n,V; real=true, norm) for (l,m,n) in lmn_t]
 	
@@ -540,19 +546,116 @@ end
 
 function LMN(B::IversBasis)
 	N = B.N
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = -l:l for n = 0:((N+1-l)÷2-1)]
-	lmn_t = [(l,m,n) for l = 1:N for m = -l:l for n = 0:((N-l)÷2)]
+	m = B.m
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m in m for n = 0:((N+1-l)÷2-1) if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:N for m in m for n = 0:((N-l)÷2) if abs(m)<=l]
 	return lmn_p,lmn_t
 end
-	
+
+function t_mf_lapl(T,l,n) 
+	# acobi(2r2-1, n, zero(T), T(l + 1//2))
+    fac = 1/sqrt(l*(1 + l)*(1/T(-1 + 2*l + 4*n) + 1/T(3 + 2*l + 4*n)))
+    return fac * (jacobi(2r2-1,n,T(0),T(l+1//2)) - jacobi(2r2-1,n-1,T(0),T(l+1//2))) 
+end
+
+
+function s_mf_lapl(T,l, n)
+    # fac = (n==1) ? 1/sqrt(l*(1 + l)*(5 + 2*l)*(6 + l*(11 + 6*l))) : 1/(sqrt(2l*(1 + l)*(-3 + 2*l + 4*n)*(-1 + 2*l + 4*n)*(1 + 2*l + 4*n)))
+    fac = 1/(sqrt(2l*T(1 + l)*(-3 + 2*l + 4*n)*(-1 + 2*l + 4*n)*(1 + 2*l + 4*n)))
+    return fac * ( (2*l + 4*n - 3) * jacobi(2r2-1,n,T(0),T(l+1//2)) - 2*(2*l + 4*n - 1)*jacobi(2r2-1,n-1,T(0),T(l+1//2)) +(2*l + 4*n + 1)*jacobi(2r2-1,n-2,T(0),T(l+1//2)))
+end
+
+btor_lapl(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (t_mf_lapl(T,l,n)*rlm(l,m,x,y,z; norm=Full{T}, kwargs...)*𝐫)
+bpol_lapl(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (∇ × (s_mf_lapl(T,l,n)*rlm(l,m,x,y,z; norm=Full{T}, kwargs...)*𝐫))
+
+
+
+struct InsMFLaplBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+    N::Int
+	m
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
+
+function basisvectors(::Type{InsMFLaplBasis}, N::Int, V::Sphere{T}; m=-N:N, kwargs...) where T
+	lmnsp, lmnst = LMN(InsMFLaplBasis, N, m)
+	BP = map(lmn->bpol_lapl(T,lmn...; kwargs...),lmnsp)
+	BT = map(lmn->btor_lapl(T,lmn...; kwargs...),lmnst)
+    return vcat(BP,BT)
+end
+
+
+function LMN(P::InsMFLaplBasis{T,V}) where {T,V}
+	N = P.N
+	m = P.m
+	lmnsp, lmnst = LMN(InsMFLaplBasis, N, m)
+	return lmnsp, lmnst
+end
+
+function LMN(::Type{InsMFLaplBasis}, N, m=-N:N) 
+	lmnsp = [(l,m,n)  for l in 1:N for m in m for n in 1:(N-l+1)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:N for m in m for n in 1:((N-l)÷2) if abs(m)<=l]
+	return lmnsp, lmnst
+end
+
+#inviscid 3D basis, sphere.
+function t_in(T,l,n) 
+    fac = sqrt(T(3+2l+4n))/sqrt(T(l*(l+1)))
+    return jacobi(2r2-1,n,T(0),T(l+1//2))*fac
+end
+
+function s_in(T,l,n) 
+    fac = sqrt(T(5+2l+4n))/sqrt(T(4l*(l+1)*(n+1)^2))
+    return (1-r2)*jacobi(2r2-1,n,T(1),T(l+1//2))*fac
+end
+
+utor_in(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (t_in(T,l,n)*rlm(l,m,x,y,z; norm=Full{T}, kwargs...)*𝐫)
+upol_in(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (∇ × (s_in(T,l,n)*rlm(l,m,x,y,z; norm=Full{T}, kwargs...)*𝐫))
+
+
+struct InviscidBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
+    N::Int
+	m
+    V::Vol
+    el::Vector{vptype{T}}
+    orthonorm::Bool
+end
+
+
+function basisvectors(::Type{InviscidBasis}, N::Int, V::Sphere{T}; m=-N:N, kwargs...) where T
+	lmnsp, lmnst = LMN(InviscidBasis, N, m)
+
+	BP = map(lmn->upol_in(T,lmn...; kwargs...),lmnsp)
+	BT = map(lmn->utor_in(T,lmn...; kwargs...),lmnst)
+    return vcat(BP,BT)
+end
+
+
+function LMN(P::InviscidBasis{T,V}) where {T,V}
+	N = P.N
+	m = P.m
+	lmnsp, lmnst = LMN(InviscidBasis, N, m)
+
+	return lmnsp, lmnst
+end
+
+function LMN(::Type{InviscidBasis}, N, m=-N:N)
+	lmnsp = [(l,m,n)  for l in 1:(N-1) for m in m for n in 0:((N-l+1)÷2-1) if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:N for m in m for n in 0:((N-l)÷2) if abs(m)<=l]
+	return lmnsp, lmnst
+end
+
+
 ## Generate constructors for each defined basis
 
 
-for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis, :IversBasis, :IversBasisC)
+for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis, :IversBasis, :IversBasisC, :InsMFLaplBasis, :InviscidBasis)
     eval(
         :(
-            $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
-                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),false)
+            $Basis(N::Int, V::Volume{T}; m=-N:N, kwargs...) where {T} =
+                $Basis(N, m, V, basisvectors($Basis, N, V; m, kwargs...),false)
         ),
     )
 end
@@ -560,8 +663,8 @@ end
 for Basis in (:QGIMBasis,:InsMFONBasis, :InsMFONCBasis)
     eval(
         :(
-            $Basis(N::Int, V::Volume{T}; kwargs...) where {T} =
-                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),true)
+            $Basis(N::Int, V::Volume{T}; m=-N:N, kwargs...) where {T} =
+                $Basis(N, m, V, basisvectors($Basis, N, V; m, kwargs...),true)
         ),
     )
 end

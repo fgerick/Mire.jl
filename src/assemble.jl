@@ -84,13 +84,14 @@ function MHDProblem(
                     B0,
                     ::Type{VB},
                     ::Type{BB};
+                    m = -N:N,
                     kwargs...
                 ) where {T<:Number,VB<:VectorBasis,BB<:VectorBasis}
     
-    (T == Float64) && (N > 15) && @warn("N = $(N) with 64-bit floating point numbers will lead to inaccuricies! Consider using more accurate floats.")
+    (T == Float64) && (N > 15) && @warn("N = $(N) with 64-bit floating point numbers will lead to inaccuracies! Consider using more accurate floats.")
 
-    vbasis = VB(N, V)
-    bbasis = BB(N, V; kwargs...)
+    vbasis = VB(N, V; m)
+    bbasis = BB(N, V; m, kwargs...)
     cmat = cacheint(N, V)
     nu = length(vbasis.el)
     nb = length(bbasis.el)
@@ -278,7 +279,7 @@ function assembles!(P::MHDProblem{T,V}; kwargs...) where {T,V}
     if !(isorthonormal(P.vbasis) && isorthonormal(P.bbasis)) 
         projectforce!(0, 0, itemps, jtemps, valtemps, P.cmat, vbasis, vbasis, inertial; kwargs...) #∂u/∂t
 
-        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
+        if typeof(P.bbasis) <: Union{InsulatingMFBasis, InsulatingMFCBasis} #, InsMFONBasis, InsMFONCBasis, InsulatingMFCBasis}
             lmnsp, lmnst = LMN(P.bbasis)
             LS = vcat(getindex.(lmnsp,1),getindex.(lmnst,1))
             MS = vcat(getindex.(lmnsp,2),getindex.(lmnst,2))
