@@ -109,6 +109,7 @@ Basis of complex QG inertial modes (Maffei et al., 2017). This basis is orthonor
 """
 struct QGIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
+	m
     V::Vol
     el::Vector{vptype{Complex{T}}}
     orthonorm::Bool
@@ -153,6 +154,7 @@ end
 
 
 function prefac(n::BigInt,m::BigInt)
+	m = abs(m)
 	ω = -1/(n*(2n+2m+1)+m/2+m^2/6)
 	fac = gamma(n+3//2)*gamma(n+m)/(gamma(n)*(2n + 1//2 + m)*gamma(n + 3//2 + m))
 	return -4big(pi)/ω*fac
@@ -163,23 +165,26 @@ function basiselementc(n::Integer,m::Integer,V::Sphere{T}) where T
 	ez =   [0,0,1]
 	h∇h =   [-x,-y,0]
 	s² = x^2 + y^2
-	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
+	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(abs(m))//1 )
 
-	ψp =   J * (im*CSH.sinsinpoly(big(m),x,y) + CSH.cossinpoly(big(m),x,y))
+	ψp =   J * ((-1)^(m<0)*im*CSH.sinsinpoly(big(abs(m)),x,y) + CSH.cossinpoly(big(abs(m)),x,y))
+	# if m<0
+	# 	ψp = conj(ψp)
+	# end
 	ψp = convert_polynom(complex(T),ψp/sqrt(prefac(big(n),big(m))))
 
 	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
-function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselementc(n,m,V) for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
+function basisvectors(::Type{QGIMBasis}, N::Int, V::Volume{T}; m=-(N-1):(N-1)) where T
+    return [basiselementc(n,m,V) for m in m for n=1:(N-abs(m)+1)÷2 ]
 end
 
 
-function NM(b::QGIMBasis)
+function NM(b::QGIMBasis; m = -(b.N-1):(b.N-1))
 	N = b.N
-	ms = [m for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
-	ns = [n for m=0:(N-1) for n=1:(N-abs(m)+1)÷2 ]
+	ms = [m for m in m for n=1:(N-abs(m)+1)÷2 ]
+	ns = [n for m in m for n=1:(N-abs(m)+1)÷2 ]
 	return ns,ms
 end
 
@@ -192,14 +197,15 @@ Real basis similar to the QG inertial modes (Maffei et al., 2017). They are not 
 """
 struct QGRIMBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
     N::Int
+	m
     V::Vol
     el::Vector{vptype{T}}
     orthonorm::Bool
 end
 
 
-function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}) where T
-    return [basiselement(n,m,V) for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
+function basisvectors(::Type{QGRIMBasis}, N::Int, V::Volume{T}; m=-(N-1):(N-1)) where T
+    return [basiselement(n,m,V) for m in m for n=1:(N-abs(m)-1)÷2]
 end
 
 function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
@@ -207,7 +213,7 @@ function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
 	ez =   [0,0,1]
 	h∇h =   [-x,-y,0]
 	s² = x^2 + y^2
-	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(m)//1 )
+	J = jacobi(2s²-1,big(n)-1,big(3)//2, big(abs(m))//1 )
 
 	ψp =   J * ((m < 0) ? CSH.sinsinpoly(-m, x, y) : CSH.cossinpoly(m, x, y))
 	ψp = convert_polynom(T,ψp/sqrt(prefac(big(n),big(abs(m)))))
@@ -215,10 +221,10 @@ function basiselement(n::Integer,m::Integer,V::Sphere{T}) where T
 	return h²*∇(ψp)×ez + 3*ψp*h∇h×ez - z*∇(ψp)×h∇h
 end
 
-function NM(b::QGRIMBasis)
+function NM(b::QGRIMBasis; m=-(N-1):(N-1))
 	N = b.N
-	ms = [m for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
-	ns = [n for m=-(N-1):(N-1) for n=1:(N-abs(m)-1)÷2]
+	ms = [m for m in m for n=1:(N-abs(m)-1)÷2]
+	ns = [n for m in m for n=1:(N-abs(m)-1)÷2]
 	return ns, ms
 end
 
@@ -301,13 +307,13 @@ struct InsulatingMFCBasis{T<:Number,Vol<:Sphere{T}} <: VectorBasis{T,Vol}
 end
 
 
-function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Sphere{T}; norm=Schmidt{T}) where T
+function basisvectors(::Type{InsulatingMFCBasis}, N::Int, V::Sphere{T}; m=-N:N, norm=Schmidt{T}) where T
     if typeof(V) != Sphere{T}
         return throw(ArgumentError("Insulating magnetic field basis is only implemented in the sphere!"))
     end
 
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:(N-l+1)÷2-1]
-	lmn_t = [(l,m,n) for l = 1:(N-2) for m = 0:l for n = 0:(N-l)÷2-1]
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m = m for n = 0:(N-l+1)÷2-1 if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:(N-2) for m = m for n = 0:(N-l)÷2-1 if abs(m)<=l]
 	
 	bpols = [bpol_g21(lmn...; real=false, norm) for lmn in lmn_p]
 	btors = [btor_g21(lmn...; real=false, norm) for lmn in lmn_t]
@@ -351,11 +357,11 @@ btor(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × 
 bpol(::Type{T}, l::Integer, m::Integer, n::Integer; kwargs...) where T = ∇ × (∇ × (k(T,l,n)*rlm(l,m,x,y,z; norm=Schmidt{T}, kwargs...)*𝐫))
 
 
-function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Sphere{T}; kwargs...) where T
+function basisvectors(::Type{InsMFONCBasis}, N::Int, V::Sphere{T}; m=-N:N, kwargs...) where T
 	N-=1
 
-	lmnsp = [(l,m,n)  for l in 1:N for m in 0:N for n in 1:(N-l+2)÷2 if abs(m)<=l]
-	lmnst = [(l,m,n) for l in 1:(N-1) for m in 0:(N-1) for n in 1:((N+1-l)÷2) if abs(m)<=l]
+	lmnsp = [(l,m,n)  for l in 1:N for m in m for n in 1:(N-l+2)÷2 if abs(m)<=l]
+	lmnst = [(l,m,n) for l in 1:(N-1) for m in m for n in 1:((N+1-l)÷2) if abs(m)<=l]
 
 	BP = map(lmn->bpol(T,lmn...; real=false, kwargs...),lmnsp)
 	BT = map(lmn->btor(T,lmn...; real=false, kwargs...),lmnst)
@@ -465,10 +471,10 @@ function basisvector_B(::Type{PVMFBasis}, V::Volume{T}, l, m, p; kwargs...) wher
 	return ℬ(Φ,V)*n + ∇(Φ)
 end
 
-function basisvectors(::Type{PVMFBasis}, N::Int, V::Volume{T}; kwargs...) where T
+function basisvectors(::Type{PVMFBasis}, N::Int, V::Volume{T}; m=-N:N, kwargs...) where T
 
-	b_A = [basisvector_A(PVMFBasis, V, l,m,p; kwargs...) for l=1:(N-2) for m=-l:l for p=(0:(N-l)÷2-1)] 
-	b_B = [basisvector_B(PVMFBasis, V, l,m,p; kwargs...) for l=1:(N-1) for m=-l:l for p=(0:(N+1-l)÷2-1)] 
+	b_A = [basisvector_A(PVMFBasis, V, l,m,p; kwargs...) for l=1:(N-2) for m in m for p=(0:(N-l)÷2-1) if abs(m)<=l]
+	b_B = [basisvector_B(PVMFBasis, V, l,m,p; kwargs...) for l=1:(N-1) for m in m for p=(0:(N+1-l)÷2-1) if abs(m)<=l]
 	return vcat(b_A, b_B)
 end
 
@@ -509,9 +515,9 @@ struct IversBasisC{T<:Number,Vol<:Volume{T}} <: Mire.VectorBasis{T,Vol}
 	orthonorm::Bool
 end
 
-function basisvectors(::Type{IversBasisC}, N::Int, V::Volume{T}; norm=Mire.Schmidt{T}) where T
-	lmn_p = [(l,m,n) for l = 1:(N-1) for m = 0:l for n = 0:((N+1-l)÷2-1)]
-	lmn_t = [(l,m,n) for l = 1:N for m = 0:l for n = 0:((N-l)÷2)]
+function basisvectors(::Type{IversBasisC}, N::Int, V::Volume{T}; m=-N:N, norm=Mire.Schmidt{T}) where T
+	lmn_p = [(l,m,n) for l = 1:(N-1) for m in m for n = 0:((N+1-l)÷2-1) if abs(m)<=l]
+	lmn_t = [(l,m,n) for l = 1:N for m in m for n = 0:((N-l)÷2) if abs(m)<=l]
 	u_p = [s(l,m,n,V; real=false, norm) for (l,m,n) in lmn_p]
 	u_t = [t(l,m,n,V; real=false, norm) for (l,m,n) in lmn_t]
 	
@@ -650,8 +656,16 @@ end
 
 ## Generate constructors for each defined basis
 
+for Basis in (:LebovitzBasis, :QGBasis)
+    eval(
+        :(
+            $Basis(N::Int, V::Volume{T}; m = -N:N, kwargs...) where {T} =
+                $Basis(N, V, basisvectors($Basis, N, V; kwargs...),false)
+        ),
+    )
+end
 
-for Basis in (:LebovitzBasis, :QGBasis, :QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis, :IversBasis, :IversBasisC, :InsMFLaplBasis, :InviscidBasis)
+for Basis in (:QGRIMBasis, :InsulatingMFBasis, :InsulatingMFCBasis, :GBasis, :PVMFBasis, :IversBasis, :IversBasisC, :InsMFLaplBasis, :InviscidBasis)
     eval(
         :(
             $Basis(N::Int, V::Volume{T}; m=-N:N, kwargs...) where {T} =
