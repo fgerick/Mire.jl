@@ -3,6 +3,7 @@ module Mire
 using Reexport
 
 using CartesianSphericalHarmonics
+const CSH = CartesianSphericalHarmonics
 @reexport using LinearAlgebra
 @reexport using MultivariatePolynomials
 using ProgressMeter
@@ -23,9 +24,16 @@ const z = TypedPolynomials.Variable{:z}()
 include("volumes.jl")
 export Volume, Ellipsoid, Sphere
 
-include("bases.jl")
-export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis, IversBasis, IversBasisC
-export ConductingMFBasis, InsulatingMFBasis, InsulatingMFCBasis
+include("bases/bases.jl")
+include("bases/inviscid.jl")
+include("bases/ivers.jl")
+include("bases/lebovitz.jl")
+include("bases/magnetic.jl")
+include("bases/pseudovacuum.jl")
+include("bases/qg.jl")
+
+export LebovitzBasis, QGBasis, QGIMBasis, QGRIMBasis, IversBasis, IversBasisC, InviscidBasis
+export ConductingMFBasis, InsulatingMFBasis, InsulatingMFCBasis, InsMFLaplBasis
 
 include("assemble.jl")
 export MireProblem, HDProblem, MHDProblem, assemble!
@@ -79,6 +87,15 @@ const ey = [0,1,0]
 const ez = [0,0,1]
 
 const r = [x, y, z]
+const 𝐫 = [x, y, z]
+
+
+# Monomials
+Π(n::Integer, m::Integer, l::Integer) = x^n * y^m * z^l
+
+const r² = 𝐫⋅𝐫
+const r2 = x^2 + y^2 + z^2
+
 
 ## Force functions:
 
